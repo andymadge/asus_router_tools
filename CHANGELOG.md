@@ -8,10 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+## [v0.3.0] - 2025-08-06
+
+### Added
 - Rich HTML formatting for all Telegram notifications with emojis, bold headers, and styled text
 - HTML formatting examples in script headers and README documentation
 - Enhanced DNS watchdog notifications with visual hierarchy and better readability
 - Support for custom HTML formatting in telegram_notify.sh messages
+- Comprehensive CHANGELOG.md for release tracking
 
 ### Changed
 - Improved Telegram message order to prioritize content in notification previews
@@ -19,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated telegram_notify.sh to version 0.2.0 with new formatting features
 - Updated dns_watchdog.sh to version 0.2.0 with rich notification formatting
 - Repository versioning system changed to semantic versioning (v0.x.x)
+- Added changelog requirement to CLAUDE.md for future releases
 
 ### Fixed
 - Install script bugs: missing telegram.conf symlink and incorrect git pull directory
