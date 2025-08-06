@@ -37,6 +37,51 @@ The system consists of two main components that work together to provide DNS mon
 - **Message Types**: Supports HTML formatting with router info and timestamps
 - **Security**: Configuration file permissions set to 600, never committed to git
 
+## Git Discipline Requirements
+
+**CRITICAL**: Always follow strict git discipline when working in this repository.
+
+### Mandatory Git Practices
+- **Review before commit**: Always run `git status` and `git diff` before committing
+- **Atomic commits**: Each commit must have single, clear responsibility
+- **Descriptive messages**: Write clear commit messages explaining the "why", not just the "what"
+- **Clean staging**: Only stage files relevant to the current commit using `git add <specific-file>`
+- **Separate concerns**: Never bundle unrelated changes in the same commit
+- **Verify state**: Always check `git status` after commits to ensure clean working tree
+
+### Required Git Workflow
+```bash
+# 1. Review all changes before committing
+git status                    # Check what files are modified/untracked
+git diff                      # Review unstaged changes
+git diff --cached            # Review staged changes
+
+# 2. Stage only relevant files for atomic commits
+git add specific-file.sh     # Stage individual files, not git add .
+
+# 3. Create descriptive commit with proper format
+git commit -m "Brief summary of change
+
+- Detailed explanation of what was changed
+- Why the change was necessary
+- Any important implementation details
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+# 4. Verify clean state
+git status                   # Ensure working tree is clean
+git log --oneline -3         # Review recent commits
+```
+
+### Examples of Good vs Bad Commits
+**✅ Good**: `Add Telegram bot configuration validation`  
+**❌ Bad**: `Fixed stuff and updated files`
+
+**✅ Good**: Separate commits for documentation and code changes  
+**❌ Bad**: Single commit with mixed README updates and script modifications
+
 ## Deployment and Usage
 
 ## Development Commands
