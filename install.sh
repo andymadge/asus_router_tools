@@ -28,13 +28,16 @@ echo "Creating symlinks in /jffs/scripts/..."
 # Remove existing files/symlinks if they exist
 rm -f /jffs/scripts/dns_watchdog.sh
 rm -f /jffs/scripts/telegram_notify.sh
+rm -f /jffs/scripts/telegram.conf
 
 # Create symlinks
 ln -sf "$SCRIPT_DIR/dns_watchdog.sh" /jffs/scripts/dns_watchdog.sh
 ln -sf "$SCRIPT_DIR/telegram_notify.sh" /jffs/scripts/telegram_notify.sh
+ln -sf "$SCRIPT_DIR/telegram.conf" /jffs/scripts/telegram.conf
 
 echo "✓ Created symlink: /jffs/scripts/dns_watchdog.sh -> $SCRIPT_DIR/dns_watchdog.sh"
 echo "✓ Created symlink: /jffs/scripts/telegram_notify.sh -> $SCRIPT_DIR/telegram_notify.sh"
+echo "✓ Created symlink: /jffs/scripts/telegram.conf -> $SCRIPT_DIR/telegram.conf"
 echo ""
 
 # Set up Telegram config
@@ -66,7 +69,7 @@ echo ""
 
 # Verify installation
 echo "Verifying installation..."
-if [ -L "/jffs/scripts/dns_watchdog.sh" ] && [ -L "/jffs/scripts/telegram_notify.sh" ]; then
+if [ -L "/jffs/scripts/dns_watchdog.sh" ] && [ -L "/jffs/scripts/telegram_notify.sh" ] && [ -L "/jffs/scripts/telegram.conf" ]; then
     echo "✓ Symlinks created successfully"
 else
     echo "✗ Error creating symlinks"
@@ -90,7 +93,7 @@ echo "2. Test Telegram notifications: /jffs/scripts/telegram_notify.sh"
 echo "3. Test DNS watchdog: /jffs/scripts/dns_watchdog.sh --verbose"
 echo ""
 echo "To update scripts in the future, run:"
-echo "  cd $(dirname "$SCRIPT_DIR") && git pull"
+echo "  cd $SCRIPT_DIR && git pull"
 echo ""
 echo "View cron jobs: cru l"
 echo "View logs: tail -f /tmp/dns_watchdog.log"
