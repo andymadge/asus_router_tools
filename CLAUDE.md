@@ -82,6 +82,50 @@ git log --oneline -3         # Review recent commits
 **✅ Good**: Separate commits for documentation and code changes  
 **❌ Bad**: Single commit with mixed README updates and script modifications
 
+## Semantic Versioning Requirements
+
+**CRITICAL**: Follow semantic versioning (semver) for all scripts using per-script versioning.
+
+### Version Format
+Each script maintains its own version in the header: `# Version: MAJOR.MINOR.PATCH`
+
+### Semver Rules
+- **MAJOR** (X.y.z): Breaking changes, incompatible API changes, or major functionality overhauls
+- **MINOR** (x.Y.z): New features, new functionality, backwards-compatible additions
+- **PATCH** (x.y.Z): Bug fixes, security patches, documentation updates, backwards-compatible fixes
+
+### Version Update Process
+```bash
+# 1. Identify which scripts have changed since last version bump
+git diff --name-only <last-version-tag>..HEAD
+
+# 2. For each changed script, determine version bump needed:
+# - Breaking change? Bump MAJOR version (1.0.0 → 2.0.0)
+# - New feature? Bump MINOR version (1.0.0 → 1.1.0)
+# - Bug fix? Bump PATCH version (1.0.0 → 1.0.1)
+
+# 3. Update version in script header
+# Edit: # Version: 0.1.0 → # Version: 0.2.0
+
+# 4. Commit version bumps
+git add changed-script.sh
+git commit -m "Bump script-name.sh version to 0.2.0
+
+- Added new feature X
+- Improved functionality Y
+- Maintains backward compatibility"
+```
+
+### Current Script Versions
+- `dns_watchdog.sh`: 0.1.0
+- `telegram_notify.sh`: 0.1.0
+- `install.sh`: 0.1.0
+
+### Version Bump Examples
+**PATCH (0.1.0 → 0.1.1)**: Fix DNS timeout bug, improve error logging  
+**MINOR (0.1.0 → 0.2.0)**: Add new notification types, new configuration options  
+**MAJOR (0.1.0 → 1.0.0)**: Change script API, require different installation method
+
 ## Deployment and Usage
 
 ## Development Commands
