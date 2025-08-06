@@ -234,7 +234,7 @@ ps | grep dns_watchdog         # Check for running processes
 ### Configuration Management
 ```bash
 # Edit Telegram configuration
-nano /jffs/asus_router/tools/telegram.conf
+nano /jffs/asus_router_tools/telegram.conf
 
 # Validate Telegram bot connection
 curl -X POST "https://api.telegram.org/bot<BOT_TOKEN>/getMe"
@@ -255,8 +255,8 @@ opkg update && opkg install git git-http
 
 # Clone repository and install
 cd /jffs
-git clone <repository-url> asus_router
-cd asus_router/tools
+git clone <repository-url> asus_router_tools
+cd asus_router_tools
 ./install.sh
 ```
 
@@ -280,7 +280,7 @@ cru d DNSWatchdog
 ### Updates
 ```bash
 # With git workflow (recommended)
-cd /jffs/asus_router && git pull
+cd /jffs/asus_router_tools && git pull
 
 # Manual update
 # Re-copy updated scripts to /jffs/scripts/

@@ -36,8 +36,8 @@ opkg install git git-http
 ```bash
 # Clone repository to persistent storage
 cd /jffs
-git clone https://github.com/yourusername/asus_router.git
-cd asus_router/scripts_tools
+git clone https://github.com/andymadge/asus_router_tools.git
+cd asus_router_tools
 
 # Run installation script
 ./install.sh
@@ -52,7 +52,7 @@ cd asus_router/scripts_tools
 6. Find your chat ID in the response
 7. Edit the config file:
 ```bash
-nano /jffs/asus_router/scripts_tools/telegram.conf
+nano /jffs/asus_router_tools/telegram.conf
 ```
 
 ### 4. Test Installation
@@ -102,7 +102,7 @@ cru a DNSWatchdog "*/5 * * * * /jffs/scripts/dns_watchdog.sh"
 
 Updates are easy with git:
 ```bash
-cd /jffs/asus_router
+cd /jffs/asus_router_tools
 git pull
 ```
 
@@ -111,7 +111,7 @@ No need to reinstall or reconfigure - symlinks automatically use the updated scr
 ## File Structure
 
 ```
-scripts_tools/
+asus_router_tools/
 ├── dns_watchdog.sh          # Main DNS monitoring script
 ├── telegram_notify.sh       # Telegram notification system  
 ├── telegram.conf.example    # Configuration template
