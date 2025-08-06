@@ -96,8 +96,8 @@ Each script maintains its own version in the header: `# Version: MAJOR.MINOR.PAT
 
 ### Version Update Process
 ```bash
-# 1. Identify which scripts have changed since last version bump
-git diff --name-only <last-version-tag>..HEAD
+# 1. Identify which scripts have changed since last release tag
+git diff --name-only <last-release-tag>..HEAD
 
 # 2. For each changed script, determine version bump needed:
 # - Breaking change? Bump MAJOR version (1.0.0 → 2.0.0)
@@ -114,6 +114,27 @@ git commit -m "Bump script-name.sh version to 0.2.0
 - Added new feature X
 - Improved functionality Y
 - Maintains backward compatibility"
+
+# 5. Create date-based release tag when ready
+git tag release-2024-08-06 -m "Release 2024-08-06: Bug fixes and new features"
+```
+
+### Repository Release Tagging
+Repository tags mark release milestones and are **completely independent** of script versions:
+- **Format**: `release-YYYY-MM-DD` (e.g., `release-2024-08-06`)
+- **Purpose**: Mark stable snapshots of the entire repository
+- **Independence**: Tag names have no relationship to individual script version numbers
+
+### Example Timeline
+```bash
+# Day 1: Initial release
+git tag release-2024-08-06 -m "Initial release: All scripts at 0.1.0"
+
+# Day 15: After several script updates
+# dns_watchdog.sh: 0.1.0 → 0.2.1
+# telegram_notify.sh: 0.1.0 → 0.3.0  
+# install.sh: still 0.1.0
+git tag release-2024-08-21 -m "August update: DNS improvements and new notifications"
 ```
 
 ### Current Script Versions
