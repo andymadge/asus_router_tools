@@ -177,31 +177,40 @@ git commit -m "Bump script-name.sh version to 0.2.0
 - Improved functionality Y
 - Maintains backward compatibility"
 
-# 5. Create date-based release tag when ready
-git tag release-2024-08-06 -m "Release 2024-08-06: Bug fixes and new features"
+# 5. Create semantic version release tag when ready
+git tag v0.2.0 -m "v0.2.0: Add new features and improvements"
 ```
 
 ### Repository Release Tagging
-Repository tags mark release milestones and are **completely independent** of script versions:
-- **Format**: `release-YYYY-MM-DD` (e.g., `release-2024-08-06`)
-- **Purpose**: Mark stable snapshots of the entire repository
-- **Independence**: Tag names have no relationship to individual script version numbers
+Repository uses semantic versioning completely **independent** of individual script versions:
+- **Format**: `v1.0.0`, `v1.1.0`, `v2.0.0` etc. (standard semantic versioning)
+- **Purpose**: Mark stable snapshots of the entire repository as a product
+- **Independence**: Repository version has no relationship to individual script version numbers
+- **Multiple daily releases**: Semantic versioning handles multiple releases per day naturally
+
+### Repository Release Guidelines
+- **MAJOR** (v0.1.0 → v1.0.0): Breaking changes, major architectural changes, API changes, or first stable release
+- **MINOR** (v0.1.0 → v0.2.0): New features, script additions, enhanced functionality
+- **PATCH** (v0.1.0 → v0.1.1): Bug fixes, documentation updates, minor improvements
 
 ### Example Timeline
 ```bash
-# Day 1: Initial release
-git tag release-2024-08-06 -m "Initial release: All scripts at 0.1.0"
+# Initial pre-release
+git tag v0.1.0 -m "v0.1.0: Initial alpha release"
 
-# Day 15: After several script updates
-# dns_watchdog.sh: 0.1.0 → 0.2.1
-# telegram_notify.sh: 0.1.0 → 0.3.0  
-# install.sh: still 0.1.0
-git tag release-2024-08-21 -m "August update: DNS improvements and new notifications"
+# Later same day: Add new features  
+git tag v0.2.0 -m "v0.2.0: Add rich HTML formatting to notifications"
+
+# Next day: Bug fixes
+git tag v0.2.1 -m "v0.2.1: Fix install script symlink issues"
+
+# Ready for production
+git tag v1.0.0 -m "v1.0.0: First stable release"
 ```
 
 ### Current Script Versions
-- `dns_watchdog.sh`: 0.1.0
-- `telegram_notify.sh`: 0.1.0
+- `dns_watchdog.sh`: 0.2.0
+- `telegram_notify.sh`: 0.2.0
 - `install.sh`: 0.1.0
 
 ### Version Bump Examples
