@@ -95,20 +95,20 @@ main() {
         # No arguments - send test message
         MESSAGE="🤖 <b>Router Test Notification</b>
 
+This is a test message from your ASUS router.
+
 Router: ${HOSTNAME}
 Time: ${TIMESTAMP}
 Uptime: ${UPTIME}
-Memory Usage: ${MEMORY}
-
-This is a test message from your ASUS router."
+Memory Usage: ${MEMORY}"
     else
         # Arguments provided - use as message
         MESSAGE="🚨 <b>Router Alert</b>
 
-Router: ${HOSTNAME}
-Time: ${TIMESTAMP}
+$*
 
-$*"
+Router: ${HOSTNAME}
+Time: ${TIMESTAMP}"
     fi
     
     # Send the message
