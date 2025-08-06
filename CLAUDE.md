@@ -363,3 +363,7 @@ Key variables that can be modified in `dns_watchdog.sh`:
 - Logs to both `/tmp/dns_watchdog.log` and syslog for persistence across reboots
 - Integrates with router's `service restart_dnsmasq` command
 - Fallback to full router reboot (`reboot`) for critical DNS failures
+
+## Changelog
+
+- Add a changelog and keep it updated before tagging each new release
