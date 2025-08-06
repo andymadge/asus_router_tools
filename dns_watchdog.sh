@@ -1,6 +1,6 @@
 #!/bin/sh
 # DNS Watchdog for ASUS RT-AX86U Pro with Merlin firmware
-# Version: 0.1.0
+# Version: 0.2.0
 
 # Place this script in /jffs/scripts/dns_watchdog.sh
 # Make it executable: chmod +x /jffs/scripts/dns_watchdog.sh
@@ -142,7 +142,9 @@ else
     
     # Send Telegram notification about DNS failure
     if [ -f "/jffs/scripts/telegram_notify.sh" ]; then
-        /jffs/scripts/telegram_notify.sh "DNS failure detected on $(uname -n). Attempting dnsmasq restart..." &
+        /jffs/scripts/telegram_notify.sh "⚠️ <b>DNS Failure Detected</b>
+<i>DNS resolution failed for test domain.</i>
+🔧 <b>Action:</b> Restarting dnsmasq service..." &
     fi
     
     RESTART_TIME=$(date '+%Y-%m-%d %H:%M:%S')
@@ -158,7 +160,9 @@ else
         log_message "=== DNS RECOVERY COMPLETE ==="
         # Send success notification
         if [ -f "/jffs/scripts/telegram_notify.sh" ]; then
-            /jffs/scripts/telegram_notify.sh "DNS recovered on $(uname -n) after dnsmasq restart ✅" &
+            /jffs/scripts/telegram_notify.sh "✅ <b>DNS Recovery Successful</b>
+<i>DNS resolution restored after dnsmasq restart.</i>
+🎉 <b>Status:</b> System operational" &
         fi
     else
         log_message "=== CRITICAL SYSTEM FAILURE ==="
@@ -168,7 +172,9 @@ else
         log_message "=== ROUTER REBOOT INITIATED ==="
         # Send critical failure notification
         if [ -f "/jffs/scripts/telegram_notify.sh" ]; then
-            /jffs/scripts/telegram_notify.sh "🚨 CRITICAL: DNS failure persists on $(uname -n). Router reboot required!" &
+            /jffs/scripts/telegram_notify.sh "🚨 <b>CRITICAL: DNS Failure Persists</b>
+<i>dnsmasq restart failed to resolve DNS issues.</i>
+🔄 <b>Action:</b> <code>Router reboot required</code>" &
         fi
         # reboot
     fi
