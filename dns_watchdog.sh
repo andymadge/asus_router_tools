@@ -1,5 +1,5 @@
 #!/bin/sh
-# DNS Watchdog for RT-AX86U Pro - Fixed Log Handling
+# DNS Watchdog for ASUS RT-AX86U Pro - Fixed Log Handling
 # https://claude.ai/chat/92a22e4d-4f0e-45d6-82f0-37d543522bed
 
 # Place this script in /jffs/scripts/dns_watchdog.sh
@@ -140,6 +140,11 @@ else
     log_message "Current dnsmasq status: $(get_dnsmasq_info)"
     log_message "Attempting dnsmasq service restart..."
     
+    # Send Telegram notification about DNS failure
+    if [ -f "/jffs/scripts/telegram_notify.sh" ]; then
+        /jffs/scripts/telegram_notify.sh "DNS failure detected on $(uname -n). Attempting dnsmasq restart..." &
+    fi
+    
     RESTART_TIME=$(date '+%Y-%m-%d %H:%M:%S')
     service restart_dnsmasq
     log_message "dnsmasq restart command issued at $RESTART_TIME"
@@ -151,12 +156,20 @@ else
     if test_dns; then
         log_message "SUCCESS - DNS resolution restored after dnsmasq restart"
         log_message "=== DNS RECOVERY COMPLETE ==="
+        # Send success notification
+        if [ -f "/jffs/scripts/telegram_notify.sh" ]; then
+            /jffs/scripts/telegram_notify.sh "DNS recovered on $(uname -n) after dnsmasq restart ✅" &
+        fi
     else
         log_message "=== CRITICAL SYSTEM FAILURE ==="
         log_message "CRITICAL FAILURE - DNS still not working after dnsmasq restart"
         log_message "Pre-reboot memory: $(cat /proc/meminfo | grep MemAvailable)"
         log_message "Pre-reboot uptime: $(uptime)"
         log_message "=== ROUTER REBOOT INITIATED ==="
+        # Send critical failure notification
+        if [ -f "/jffs/scripts/telegram_notify.sh" ]; then
+            /jffs/scripts/telegram_notify.sh "🚨 CRITICAL: DNS failure persists on $(uname -n). Router reboot required!" &
+        fi
         # reboot
     fi
 fi
