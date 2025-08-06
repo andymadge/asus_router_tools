@@ -82,6 +82,68 @@ git log --oneline -3         # Review recent commits
 **✅ Good**: Separate commits for documentation and code changes  
 **❌ Bad**: Single commit with mixed README updates and script modifications
 
+## Security Requirements
+
+**CRITICAL**: Always follow strict security practices to protect credentials and maintain safe public repository.
+
+### Mandatory Security Checks Before Any Commit
+```bash
+# 1. Verify no credentials in tracked files
+git ls-files | xargs grep -l "BOT_TOKEN\|CHAT_ID" | grep -v "\.example$"
+# Should only return files ending in .example or containing placeholder text
+
+# 2. Check .gitignore is protecting credential files  
+git check-ignore telegram.conf
+# Should confirm file is ignored
+
+# 3. Verify no sensitive data in git history
+git log --patch --all | grep -i "bot.*token\|chat.*id" | grep -v "placeholder\|example\|your_.*_here"
+# Should return no real credential values
+
+# 4. Test git prevents committing credentials
+git add telegram.conf 2>&1 | grep -q "ignored by.*gitignore"
+# Should show ignore warning, not stage the file
+```
+
+### Required .gitignore Protection
+```gitignore
+# Telegram credentials - never commit these
+telegram.conf
+
+# Router-specific config files  
+*.conf
+
+# Log files
+*.log
+```
+
+### Credential File Security Rules
+- **telegram.conf**: Must contain real credentials, never commit to git
+- **telegram.conf.example**: Template with placeholders only, safe to commit
+- **File permissions**: Always set credential files to 600 (user read/write only)
+- **Documentation**: Always emphasize "never commit credentials" in setup instructions
+
+### Security Validation Commands
+```bash
+# Ensure credential file has proper permissions
+chmod 600 telegram.conf
+
+# Verify gitignore is working
+git status --ignored | grep telegram.conf
+
+# Check no real credentials in any tracked files
+git grep -i "8[0-9]\{9\}:" -- ':!*.example'  # Telegram bot token pattern
+git grep -i "[0-9]\{10,\}" -- ':!*.example'   # Telegram chat ID pattern
+```
+
+### Pre-Public-Release Security Checklist
+- [ ] No real API keys, tokens, or passwords in any tracked files
+- [ ] All credential files properly gitignored
+- [ ] Template files contain only placeholder values
+- [ ] Documentation emphasizes credential security
+- [ ] Installation scripts set proper file permissions
+- [ ] Git history contains no committed secrets
+
 ## Semantic Versioning Requirements
 
 **CRITICAL**: Follow semantic versioning (semver) for all scripts using per-script versioning.
