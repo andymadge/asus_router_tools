@@ -1,6 +1,6 @@
 #!/bin/sh
 # Telegram Notification Script for ASUS Router
-# Version: 0.2.0
+# Version: 0.3.0
 # Works even when DNS is down by using direct IP addresses
 
 # SETUP INSTRUCTIONS:
@@ -36,8 +36,56 @@ fi
 # Telegram API server IPs (fallback when DNS is down)
 TELEGRAM_IPS="149.154.167.50 149.154.167.51 149.154.167.220 149.154.167.99"
 
-# Function to send telegram message
-send_telegram() {
+# Queue configuration
+QUEUE_FILE="/tmp/telegram_queue.txt"
+QUEUE_MAX_SIZE=20
+
+# Function to escape message for queue storage
+escape_message() {
+    local message="$1"
+    # Escape newlines, backslashes, and other shell special characters
+    printf '%s' "$message" | sed 's/\\/\\\\/g; s/$/\\n/g' | tr -d '\n'
+}
+
+# Function to unescape message from queue storage
+unescape_message() {
+    local escaped="$1"
+    printf '%s' "$escaped" | sed 's/\\n/\n/g; s/\\\\/\\/g'
+}
+
+# Function to check if queue is full
+is_queue_full() {
+    local count=$(get_queue_size)
+    [ "$count" -ge "$QUEUE_MAX_SIZE" ]
+}
+
+# Function to add message to queue
+queue_message() {
+    local message="$1"
+    local escaped_message
+    
+    escaped_message=$(escape_message "$message")
+    
+    # Create queue file if it doesn't exist
+    touch "$QUEUE_FILE" 2>/dev/null || return 1
+    
+    # Add message to end of queue
+    echo "$escaped_message" >> "$QUEUE_FILE" 2>/dev/null || return 1
+    
+    return 0
+}
+
+# Function to get queue size
+get_queue_size() {
+    if [ ! -f "$QUEUE_FILE" ] || [ ! -s "$QUEUE_FILE" ]; then
+        echo "0"
+        return
+    fi
+    grep -c . "$QUEUE_FILE" 2>/dev/null || echo "0"
+}
+
+# Function to send raw telegram message (without queue processing)
+send_telegram_raw() {
     local message="$1"
     local success=0
     
@@ -64,6 +112,92 @@ send_telegram() {
     done
     
     return $((1 - success))
+}
+
+# Function to process queued messages
+process_queue() {
+    if [ ! -f "$QUEUE_FILE" ] || [ ! -s "$QUEUE_FILE" ]; then
+        return 0
+    fi
+    
+    local temp_file="${QUEUE_FILE}.tmp"
+    local temp_processed="${QUEUE_FILE}.processed"
+    local line_num=0
+    local sent_count=0
+    local failed_messages=""
+    
+    # Process each message in the queue
+    while IFS= read -r escaped_message; do
+        line_num=$((line_num + 1))
+        
+        if [ -n "$escaped_message" ]; then
+            local message=$(unescape_message "$escaped_message")
+            
+            if send_telegram_raw "$message"; then
+                sent_count=$((sent_count + 1))
+            else
+                # Keep failed message for retry
+                if [ -n "$failed_messages" ]; then
+                    failed_messages="${failed_messages}\n${escaped_message}"
+                else
+                    failed_messages="$escaped_message"
+                fi
+            fi
+        fi
+    done < "$QUEUE_FILE"
+    
+    # Update queue with only failed messages
+    if [ -n "$failed_messages" ]; then
+        printf %b "$failed_messages" > "$temp_file" 2>/dev/null && mv "$temp_file" "$QUEUE_FILE"
+    else
+        # All messages sent successfully, clear queue
+        rm -f "$QUEUE_FILE" 2>/dev/null
+    fi
+    
+    # Clean up temp files
+    rm -f "$temp_file" "$temp_processed" 2>/dev/null
+    
+    return 0
+}
+
+# Function to send telegram message with queue support
+send_telegram() {
+    local message="$1"
+    local queue_size
+    
+    # First, try to process any existing queued messages
+    process_queue
+    
+    # Try to send the new message
+    if send_telegram_raw "$message"; then
+        return 0
+    fi
+    
+    # Message failed to send, check if we can queue it
+    if is_queue_full; then
+        # Queue is full, send overflow notification instead of queuing
+        local overflow_msg="🚫 <b>Message Queue Full</b>
+
+<i>Unable to deliver notification - queue has reached maximum capacity of ${QUEUE_MAX_SIZE} messages.</i>
+
+<b>Original message preview:</b>
+$(printf '%.100s' "$message" | sed 's/</\&lt;/g; s/>/\&gt;/g')$([ ${#message} -gt 100 ] && echo "...")"
+        
+        # Try to send overflow notification (don't queue this one)
+        send_telegram_raw "$overflow_msg" >/dev/null 2>&1
+        return 1
+    fi
+    
+    # Queue the failed message
+    if queue_message "$message"; then
+        queue_size=$(get_queue_size)
+        logger "Telegram message queued (queue size: $queue_size/$QUEUE_MAX_SIZE)"
+        return 1
+    fi
+    
+    # Failed to queue message
+    logger "Failed to queue Telegram message"
+    return 1
 }
 
 # Function to get router info
