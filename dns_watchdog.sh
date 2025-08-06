@@ -118,8 +118,6 @@ test_dns() {
 
 # Start logging
 log_conditional "=== DNS Watchdog Check Started ===" 0
-log_conditional "Testing resolution of $TEST_DOMAIN against 127.0.0.1" 0
-log_conditional "dnsmasq status: $(get_dnsmasq_info)" 0
 
 # Test DNS resolution
 if test_dns; then
