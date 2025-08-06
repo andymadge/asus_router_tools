@@ -13,7 +13,7 @@
 #    BOT_TOKEN="your_bot_token_here"
 #    CHAT_ID="your_chat_id_here"
 # 7. Secure the config: chmod 600 telegram.conf
-# 8. Test with: ./telegram_notify.sh
+# 8. Test with: `./telegram_notify.sh` or `./telegram_notify.sh "Custom message here"`
 
 # Configuration - Load from config file
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
