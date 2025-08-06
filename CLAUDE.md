@@ -367,3 +367,6 @@ Key variables that can be modified in `dns_watchdog.sh`:
 ## Changelog
 
 - Add a changelog and keep it updated before tagging each new release
+
+## README.md Management
+- Ensure the README.md is updated as appropriate whenever there are changes to the code
