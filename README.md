@@ -198,4 +198,12 @@ asus_router_tools/
 
 ## License
 
-This project is provided as-is for educational and personal use.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+The MIT License allows for:
+- ✅ Personal and commercial use
+- ✅ Modification and distribution
+- ✅ Private use
+- ✅ Sublicensing
+
+Requires only attribution of copyright notice in distributions.
