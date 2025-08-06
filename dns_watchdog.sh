@@ -1,5 +1,5 @@
 #!/bin/sh
-# DNS Watchdog for ASUS RT-AX86U Pro - Fixed Log Handling
+# DNS Watchdog for ASUS RT-AX86U Pro with Merlin firmware
 # https://claude.ai/chat/92a22e4d-4f0e-45d6-82f0-37d543522bed
 
 # Place this script in /jffs/scripts/dns_watchdog.sh
