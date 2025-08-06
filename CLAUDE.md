@@ -183,8 +183,12 @@ curl "https://api.telegram.org/bot<BOT_TOKEN>/getUpdates"
 
 ### Installation on Router (Git Workflow)
 ```bash
-# Install Entware and git (one-time setup)
-/usr/sbin/entware-setup.sh
+# Install Entware via amtm (one-time setup)
+amtm
+# Select option 'ep' to install Entware
+# Follow prompts to complete installation
+
+# Install git
 opkg update && opkg install git git-http
 
 # Clone repository and install

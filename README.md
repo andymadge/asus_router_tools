@@ -22,8 +22,10 @@ A comprehensive DNS monitoring and notification system for ASUS routers running 
 ```bash
 # Enable JFFS in router web interface: Administration > System > Enable JFFS custom scripts and configs
 
-# SSH to router and install Entware
-/usr/sbin/entware-setup.sh
+# SSH to router and install Entware via amtm
+amtm
+# Select option 'ep' to install Entware
+# Follow prompts to complete installation
 
 # Install git
 opkg update
