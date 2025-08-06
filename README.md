@@ -94,6 +94,11 @@ cru a DNSWatchdog "*/5 * * * * /jffs/scripts/dns_watchdog.sh"
 # Send test notification
 /jffs/scripts/telegram_notify.sh "Test message"
 
+# Send notifications with HTML formatting
+/jffs/scripts/telegram_notify.sh "<b>DNS Failed</b>"                                    # → **DNS Failed**
+/jffs/scripts/telegram_notify.sh "<i>Warning:</i> <code>High CPU usage detected</code>" # → *Warning:* `High CPU usage detected`
+/jffs/scripts/telegram_notify.sh "🔥 <b>Critical:</b> Router temperature: <code>85°C</code>" # → 🔥 **Critical:** Router temperature: `85°C`
+
 # Run DNS check manually
 /jffs/scripts/dns_watchdog.sh --verbose
 ```

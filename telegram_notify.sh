@@ -14,6 +14,11 @@
 #    CHAT_ID="your_chat_id_here"
 # 7. Secure the config: chmod 600 telegram.conf
 # 8. Test with: `./telegram_notify.sh` or `./telegram_notify.sh "Custom message here"`
+#
+# HTML FORMATTING EXAMPLES:
+# ./telegram_notify.sh "<b>DNS Failed</b>"
+# ./telegram_notify.sh "<i>Warning:</i> <code>High CPU usage detected</code>"
+# ./telegram_notify.sh "🔥 <b>Critical:</b> Router temperature: <code>85°C</code>"
 
 # Configuration - Load from config file
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -95,20 +100,20 @@ main() {
         # No arguments - send test message
         MESSAGE="🤖 <b>Router Test Notification</b>
 
-This is a test message from your ASUS router.
+<i>✅ This is a test message from your ASUS router.</i>
 
-Router: ${HOSTNAME}
-Time: ${TIMESTAMP}
-Uptime: ${UPTIME}
-Memory Usage: ${MEMORY}"
+<b>📡 Router:</b> <code>${HOSTNAME}</code>
+<b>🕐 Time:</b> <code>${TIMESTAMP}</code>
+<b>⏱️ Uptime:</b> <code>${UPTIME}</code>
+<b>💾 Memory:</b> <code>${MEMORY}</code>"
     else
         # Arguments provided - use as message
         MESSAGE="🚨 <b>Router Alert</b>
 
 $*
 
-Router: ${HOSTNAME}
-Time: ${TIMESTAMP}"
+<b>📡 Router:</b> <code>${HOSTNAME}</code>
+<b>🕐 Time:</b> <code>${TIMESTAMP}</code>"
     fi
     
     # Send the message
