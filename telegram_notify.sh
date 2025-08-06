@@ -1,5 +1,6 @@
 #!/bin/sh
 # Telegram Notification Script for ASUS Router
+# Version: 0.1.0
 # Works even when DNS is down by using direct IP addresses
 
 # SETUP INSTRUCTIONS:
