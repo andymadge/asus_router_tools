@@ -1,15 +1,21 @@
-# ASUS Router DNS Watchdog with Telegram Notifications
+# ASUS Router Tools
 
-A comprehensive DNS monitoring and notification system for ASUS routers running Asuswrt-Merlin firmware.
+A collection of utilities and monitoring tools for ASUS routers running Asuswrt-Merlin firmware. Currently includes DNS monitoring with Telegram notifications, with more router management tools planned for future releases.
 
-## Features
+## Current Tools
 
-- **DNS Monitoring**: Continuous monitoring of DNS resolution every 5 minutes
-- **Automatic Recovery**: Restarts dnsmasq service when DNS failures are detected
-- **Telegram Notifications**: Real-time alerts sent to your phone via Telegram
-- **Fallback Communication**: Works even when DNS is down using direct IP addresses
-- **Comprehensive Logging**: Detailed logs with configurable verbosity
-- **Router Reboot Protection**: Escalates to router reboot if dnsmasq restart fails
+### DNS Watchdog
+There is a common problem with dnsmasq on ASUS routers where it will randomly stop resolving. This script continuously monitors DNS resolution and automatically restarts dnsmasq or the entire router to fix issues.
+
+**Key Features:**
+- Continuous DNS monitoring every 5 minutes via cron job
+- Automatic recovery via dnsmasq service restart  
+- Real-time Telegram notifications
+- Fallback communication using direct IP addresses since DNS will be down at the time
+- Formatted messages with HTML support
+- Detailed logging to `/tmp/dns_watchdog.log`
+- Configurable test domain (default: `google.com`)
+- Router reboot protection as last resort (currently commented out)
 
 ## Quick Setup
 
@@ -64,9 +70,31 @@ nano /jffs/asus_router_tools/telegram.conf
 /jffs/scripts/dns_watchdog.sh --verbose
 ```
 
-## Usage
+## DNS Watchdog Tool
 
-### Monitoring
+The DNS watchdog is the primary tool currently included in this collection. It provides robust DNS monitoring with automatic recovery capabilities.
+
+### How It Works
+
+The DNS watchdog system consists of two main components:
+
+1. **dns_watchdog.sh** - Core monitoring script that:
+   - Tests DNS resolution against local dnsmasq service (127.0.0.1)
+   - Uses `google.com` as the default test domain
+   - Runs every 5 minutes via cron job
+   - Automatically restarts dnsmasq when DNS failures are detected
+   - Escalates to router reboot if DNS issues persist
+   - Logs to both file (`/tmp/dns_watchdog.log`) and syslog
+
+2. **telegram_notify.sh** - Notification system that:
+   - Sends real-time alerts to your Telegram chat
+   - Works even during DNS outages using hardcoded IP addresses
+   - Supports rich HTML formatting with emojis and styled text
+   - Includes router information and timestamps in all messages
+
+### Usage
+
+#### Monitoring
 ```bash
 # View recent logs
 tail -20 /tmp/dns_watchdog.log
@@ -78,7 +106,7 @@ tail -f /tmp/dns_watchdog.log
 cru l
 ```
 
-### Debugging
+#### Debugging
 ```bash
 # Enable verbose mode temporarily
 cru d DNSWatchdog
@@ -89,7 +117,7 @@ cru d DNSWatchdogVerbose
 cru a DNSWatchdog "*/5 * * * * /jffs/scripts/dns_watchdog.sh"
 ```
 
-### Manual Operations
+#### Manual Operations
 ```bash
 # Send test notification
 /jffs/scripts/telegram_notify.sh "Test message"
@@ -102,6 +130,27 @@ cru a DNSWatchdog "*/5 * * * * /jffs/scripts/dns_watchdog.sh"
 # Run DNS check manually
 /jffs/scripts/dns_watchdog.sh --verbose
 ```
+
+### Notification Types
+
+The DNS watchdog sends three types of Telegram notifications:
+
+1. **DNS Failure** 🚨 - When DNS resolution initially fails
+2. **DNS Recovery** ✅ - When DNS is restored after dnsmasq restart
+3. **Critical Failure** 🚨 - When DNS persists after restart (before reboot)
+
+### Configuration
+
+#### DNS Watchdog Settings
+- **Test Domain**: `google.com` (configurable in script)
+- **Test Frequency**: Every 5 minutes via cron
+- **Log Location**: `/tmp/dns_watchdog.log`
+- **Log Rotation**: Automatic when file exceeds 500 lines
+
+#### Telegram Notifications
+- **Config File**: `telegram.conf` in same directory as script
+- **Fallback IPs**: Multiple Telegram server IPs for DNS-down scenarios
+- **Message Format**: HTML with router info and timestamps
 
 ## Updates
 
@@ -117,34 +166,13 @@ No need to reinstall or reconfigure - symlinks automatically use the updated scr
 
 ```
 asus_router_tools/
-├── dns_watchdog.sh          # Main DNS monitoring script
+├── dns_watchdog.sh          # DNS monitoring script
 ├── telegram_notify.sh       # Telegram notification system  
 ├── telegram.conf.example    # Configuration template
 ├── telegram.conf            # Your credentials (not in git)
 ├── install.sh              # Installation script
 └── CLAUDE.md               # AI assistant guidance
 ```
-
-## Notification Types
-
-The system sends three types of Telegram notifications:
-
-1. **DNS Failure** 🚨 - When DNS resolution initially fails
-2. **DNS Recovery** ✅ - When DNS is restored after dnsmasq restart
-3. **Critical Failure** 🚨 - When DNS persists after restart (before reboot)
-
-## Configuration
-
-### DNS Watchdog (`dns_watchdog.sh`)
-- **Test Domain**: `google.com` (configurable in script)
-- **Test Frequency**: Every 5 minutes via cron
-- **Log Location**: `/tmp/dns_watchdog.log`
-- **Log Rotation**: Automatic when file exceeds 500 lines
-
-### Telegram Notifications (`telegram_notify.sh`)
-- **Config File**: `telegram.conf` in same directory as script
-- **Fallback IPs**: Multiple Telegram server IPs for DNS-down scenarios
-- **Message Format**: HTML with router info and timestamps
 
 ## Security
 
