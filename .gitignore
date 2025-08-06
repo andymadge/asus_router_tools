@@ -1,0 +1,8 @@
+# Telegram credentials - never commit these
+telegram.conf
+
+# Router-specific config files
+*.conf
+
+# Log files
+*.log

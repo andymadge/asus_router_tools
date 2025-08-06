@@ -1,0 +1,6 @@
+# Telegram Bot Configuration
+# Copy this file to telegram.conf and fill in your values
+# Keep telegram.conf secure and never commit it to git
+
+BOT_TOKEN="your_bot_token_here"
+CHAT_ID="your_chat_id_here"
