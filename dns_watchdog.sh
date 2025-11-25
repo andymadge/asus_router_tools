@@ -1,6 +1,6 @@
 #!/bin/sh
 # DNS Watchdog for ASUS RT-AX86U Pro with Merlin firmware
-# Version: 0.2.0
+# Version: 0.2.1
 
 # Place this script in /jffs/scripts/dns_watchdog.sh
 # Make it executable: chmod +x /jffs/scripts/dns_watchdog.sh
@@ -169,13 +169,14 @@ else
         log_message "CRITICAL FAILURE - DNS still not working after dnsmasq restart"
         log_message "Pre-reboot memory: $(cat /proc/meminfo | grep MemAvailable)"
         log_message "Pre-reboot uptime: $(uptime)"
-        log_message "=== ROUTER REBOOT INITIATED ==="
+        log_message "=== MANUAL ROUTER REBOOT RECOMMENDED ==="
         # Send critical failure notification
         if [ -f "/jffs/scripts/telegram_notify.sh" ]; then
             /jffs/scripts/telegram_notify.sh "🚨 <b>CRITICAL: DNS Failure Persists</b>
 <i>dnsmasq restart failed to resolve DNS issues.</i>
-🔄 <b>Action:</b> <code>Router reboot required</code>" &
+⚠️ <b>Recommendation:</b> Manual router reboot recommended" &
         fi
+        # Reboot command commented out - manual intervention required
         # reboot
     fi
 fi
