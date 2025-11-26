@@ -1,7 +1,8 @@
 #!/bin/sh
 # Telegram Notification Script for ASUS Router
-# Version: 0.3.0
 # Works even when DNS is down by using direct IP addresses
+
+VERSION="0.3.0"
 
 # SETUP INSTRUCTIONS:
 # 1. Message @BotFather on Telegram and create a bot with /newbot
@@ -210,6 +211,12 @@ get_router_info() {
 
 # Main script logic
 main() {
+    # Check for --version argument first (before configuration check)
+    if [ "$1" = "--version" ]; then
+        echo "Telegram Notification Script version $VERSION"
+        exit 0
+    fi
+
     # Check if required configuration is set
     if [ -z "$BOT_TOKEN" ] || [ -z "$CHAT_ID" ]; then
         echo "Error: BOT_TOKEN and CHAT_ID not configured"

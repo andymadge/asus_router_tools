@@ -1,7 +1,14 @@
 #!/bin/sh
 # Installation script for ASUS Router DNS Watchdog with Telegram notifications
-# Version: 0.1.0
 # Run this script on your ASUS router after cloning the repo
+
+VERSION="0.1.0"
+
+# Check for --version argument
+if [ "$1" = "--version" ]; then
+    echo "Installation Script version $VERSION"
+    exit 0
+fi
 
 set -e  # Exit on any error
 
