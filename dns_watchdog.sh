@@ -1,7 +1,5 @@
 #!/bin/sh
 # DNS Watchdog for ASUS RT-AX86U Pro with Merlin firmware
-# Version: 0.2.1
-
 # Place this script in /jffs/scripts/dns_watchdog.sh
 # Make it executable: chmod +x /jffs/scripts/dns_watchdog.sh
 

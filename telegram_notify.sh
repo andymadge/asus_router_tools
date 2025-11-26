@@ -1,7 +1,8 @@
 #!/bin/sh
 # Telegram Notification Script for ASUS Router
-# Version: 0.3.0
 # Works even when DNS is down by using direct IP addresses
+
+VERSION="0.3.0"
 
 # SETUP INSTRUCTIONS:
 # 1. Message @BotFather on Telegram and create a bot with /newbot
@@ -212,7 +213,7 @@ get_router_info() {
 main() {
     # Check for --version argument first (before configuration check)
     if [ "$1" = "--version" ]; then
-        echo "Telegram Notification Script version 0.3.0"
+        echo "Telegram Notification Script version $VERSION"
         exit 0
     fi
 
