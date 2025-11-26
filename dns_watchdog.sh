@@ -25,13 +25,17 @@
 #     cru d DNSWatchdogVerbose
 #     cru a DNSWatchdog "*/5 * * * * /jffs/scripts/dns_watchdog.sh"
 
+VERSION="0.2.1"
 LOGFILE="/tmp/dns_watchdog.log"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 TEST_DOMAIN="google.com"
 VERBOSE=0
 
-# Check for verbose flag
-if [ "$1" = "--verbose" ]; then
+# Check for command line arguments
+if [ "$1" = "--version" ]; then
+    echo "DNS Watchdog version $VERSION"
+    exit 0
+elif [ "$1" = "--verbose" ]; then
     VERBOSE=1
     echo "DNS Watchdog running in VERBOSE mode"
 fi

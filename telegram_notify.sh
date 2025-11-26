@@ -210,6 +210,12 @@ get_router_info() {
 
 # Main script logic
 main() {
+    # Check for --version argument first (before configuration check)
+    if [ "$1" = "--version" ]; then
+        echo "Telegram Notification Script version 0.3.0"
+        exit 0
+    fi
+
     # Check if required configuration is set
     if [ -z "$BOT_TOKEN" ] || [ -z "$CHAT_ID" ]; then
         echo "Error: BOT_TOKEN and CHAT_ID not configured"

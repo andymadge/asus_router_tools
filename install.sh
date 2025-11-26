@@ -3,6 +3,12 @@
 # Version: 0.1.0
 # Run this script on your ASUS router after cloning the repo
 
+# Check for --version argument
+if [ "$1" = "--version" ]; then
+    echo "Installation Script version 0.1.0"
+    exit 0
+fi
+
 set -e  # Exit on any error
 
 echo "=== ASUS Router DNS Watchdog Installation ==="
