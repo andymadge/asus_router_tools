@@ -1,6 +1,12 @@
 #!/bin/sh
 # Analyzer script for DNS watchdog false positives
-# Version: 1.0.0
+
+VERSION="1.0.0"
+
+if [ "$1" = "--version" ]; then
+    echo "DNS Watchdog False Positive Analyzer version $VERSION"
+    exit 0
+fi
 
 DIAGNOSTIC_LOG="/tmp/dns_watchdog_diagnostic.log"
 FAILURE_TRACKER="/tmp/dns_watchdog_failures.log"

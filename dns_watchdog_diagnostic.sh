@@ -1,6 +1,5 @@
 #!/bin/sh
 # DNS Watchdog DIAGNOSTIC VERSION - Enhanced logging to identify false positives
-# Version: 0.3.0-diagnostic
 #
 # This version adds extensive diagnostics to help identify false positive DNS failures.
 # Run this temporarily in place of dns_watchdog.sh to gather diagnostic data.
@@ -14,6 +13,7 @@
 # - Consecutive failure tracking
 # - DRY-RUN mode (logs everything but doesn't restart services)
 
+VERSION="0.3.0-diagnostic"
 LOGFILE="/tmp/dns_watchdog_diagnostic.log"
 FAILURE_TRACKER="/tmp/dns_watchdog_failures.log"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
@@ -30,6 +30,10 @@ EXTERNAL_DNS="8.8.8.8"  # Google DNS for comparison
 # Check for flags
 while [ $# -gt 0 ]; do
     case "$1" in
+        --version)
+            echo "DNS Watchdog Diagnostic version $VERSION"
+            exit 0
+            ;;
         --verbose)
             VERBOSE=1
             echo "DNS Watchdog running in VERBOSE mode"
