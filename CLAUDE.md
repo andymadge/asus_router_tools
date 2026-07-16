@@ -94,7 +94,7 @@ telegram.conf
 **Current versions:**
 - `dns_watchdog.sh`: 0.2.0
 - `telegram_notify.sh`: 0.2.0  
-- `install.sh`: 0.1.0
+- `install.sh`: 0.2.0
 
 ## Configuration & Setup
 
@@ -124,9 +124,8 @@ cd /jffs
 git clone <repository-url> asus_router_tools
 cd asus_router_tools  
 ./install.sh
-
-# Enable monitoring  
-cru a DNSWatchdog "*/5 * * * * /jffs/scripts/dns_watchdog.sh"
+# install.sh registers the cron job AND persists it across reboots via
+# /jffs/scripts/services-start (cru entries live in RAM, lost on reboot)
 ```
 
 ## Development Commands

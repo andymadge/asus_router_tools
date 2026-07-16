@@ -9,6 +9,7 @@ There is a common problem with dnsmasq on ASUS routers where it will randomly st
 
 **Key Features:**
 - Continuous DNS monitoring every 5 minutes via cron job
+- Cron job survives reboots (re-registered at boot via `/jffs/scripts/services-start`)
 - Automatic recovery via dnsmasq service restart  
 - Real-time Telegram notifications
 - Fallback communication using direct IP addresses since DNS will be down at the time
@@ -81,7 +82,7 @@ The DNS watchdog system consists of two main components:
 1. **dns_watchdog.sh** - Core monitoring script that:
    - Tests DNS resolution against local dnsmasq service (127.0.0.1)
    - Uses `google.com` as the default test domain
-   - Runs every 5 minutes via cron job
+   - Runs every 5 minutes via cron job (registered at install and re-registered at every boot via `/jffs/scripts/services-start` — `cru` entries live in RAM and are lost on reboot)
    - Automatically restarts dnsmasq when DNS failures are detected
    - Escalates to router reboot if DNS issues persist
    - Logs to both file (`/tmp/dns_watchdog.log`) and syslog
@@ -186,7 +187,7 @@ asus_router_tools/
 ### Common Issues
 
 1. **Notifications not working**: Check `telegram.conf` credentials
-2. **Cron job not running**: Verify with `cru l` and check system time
+2. **Cron job not running**: Verify with `cru l` and check system time. If it's missing after a reboot, check `/jffs/scripts/services-start` exists, is executable, and contains the `cru a DNSWatchdog` line (installs made with install.sh < 0.2.0 didn't set this up — re-run `./install.sh`)
 3. **DNS false positives**: Test with different domain in script
 4. **Permission errors**: Ensure scripts are executable (`chmod +x`)
 
