@@ -92,7 +92,7 @@ telegram.conf
 - **PATCH** - Bug fixes, documentation updates
 
 **Current versions:**
-- `dns_watchdog.sh`: 0.2.0
+- `dns_watchdog.sh`: 0.3.0
 - `telegram_notify.sh`: 0.2.0  
 - `install.sh`: 0.2.0
 
@@ -165,6 +165,7 @@ cd /jffs/asus_router_tools && git pull
 
 ### DNS Watchdog (`dns_watchdog.sh`)
 - Tests `google.com` resolution against local dnsmasq
+- Healthy checks are silent; one daily heartbeat line proves liveness
 - Timeout handling with manual fallback  
 - Tracks dnsmasq PID and memory usage
 - Auto log rotation at 500 lines

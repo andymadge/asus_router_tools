@@ -23,8 +23,9 @@
 #     cru d DNSWatchdogVerbose
 #     cru a DNSWatchdog "*/5 * * * * /jffs/scripts/dns_watchdog.sh"
 
-VERSION="0.2.1"
+VERSION="0.3.0"
 LOGFILE="/tmp/dns_watchdog.log"
+HEARTBEAT_FILE="/tmp/dns_watchdog_heartbeat"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 TEST_DOMAIN="google.com"
 VERBOSE=0
@@ -124,6 +125,16 @@ log_conditional "=== DNS Watchdog Check Started ===" 0
 # Test DNS resolution
 if test_dns; then
     log_conditional "DNS check PASSED - $TEST_DOMAIN resolved successfully" 0
+
+    # Daily heartbeat: healthy runs are otherwise silent, which makes a dead
+    # watchdog indistinguishable from a healthy one. Log one line per day
+    # (and on the first run after each reboot, since /tmp is wiped) so the
+    # log always answers "when did it last run?"
+    TODAY=$(date '+%Y-%m-%d')
+    if [ "$(cat "$HEARTBEAT_FILE" 2>/dev/null)" != "$TODAY" ]; then
+        log_message "Heartbeat: watchdog alive, DNS healthy (v$VERSION)"
+        echo "$TODAY" > "$HEARTBEAT_FILE"
+    fi
 else
     DNS_EXIT_CODE=$?
     log_message "=== DNS FAILURE DETECTED ==="
