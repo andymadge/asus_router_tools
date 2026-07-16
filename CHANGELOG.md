@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Daily heartbeat log line in dns_watchdog.sh (0.3.0): healthy checks are silent by design, which made a dead watchdog indistinguishable from a healthy one — now one "Heartbeat: watchdog alive" line is logged per day, plus on the first run after each reboot (/tmp is wiped), so `grep Heartbeat /tmp/dns_watchdog.log` always answers "when did it last run?"
 
 ### Changed
 

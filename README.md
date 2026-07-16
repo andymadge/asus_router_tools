@@ -15,6 +15,7 @@ There is a common problem with dnsmasq on ASUS routers where it will randomly st
 - Fallback communication using direct IP addresses since DNS will be down at the time
 - Formatted messages with HTML support
 - Detailed logging to `/tmp/dns_watchdog.log`
+- Daily heartbeat log line — healthy runs are otherwise silent, so the heartbeat proves the watchdog is alive (also logged on first run after each reboot)
 - Configurable test domain (default: `google.com`)
 - Router reboot protection as last resort (currently commented out)
 
@@ -100,12 +101,17 @@ The DNS watchdog system consists of two main components:
 # View recent logs
 tail -20 /tmp/dns_watchdog.log
 
+# Confirm the watchdog is alive (one line per day; healthy checks are otherwise silent)
+grep Heartbeat /tmp/dns_watchdog.log
+
 # Monitor logs in real-time
 tail -f /tmp/dns_watchdog.log
 
 # Check cron jobs
 cru l
 ```
+
+Note: healthy 5-minute checks write nothing — only failures, recoveries, and the daily heartbeat reach the log. An empty or missing log right after a reboot is normal until the first check runs; no heartbeat for more than a day means the watchdog is not running (check `cru l` and `/jffs/scripts/services-start`).
 
 #### Debugging
 ```bash
