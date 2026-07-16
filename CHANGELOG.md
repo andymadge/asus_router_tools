@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Fixed
+- Cron job now survives router reboots: install.sh (0.2.0) registers the `cru a DNSWatchdog` line in `/jffs/scripts/services-start` (created if missing, made executable), so the watchdog is re-armed at every boot. Previously the job was only added to the live crontab, which is held in RAM — the first reboot silently killed the watchdog.
 
 ## [v0.3.0] - 2025-08-06
 

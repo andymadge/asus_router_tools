@@ -2,7 +2,7 @@
 # Installation script for ASUS Router DNS Watchdog with Telegram notifications
 # Run this script on your ASUS router after cloning the repo
 
-VERSION="0.1.0"
+VERSION="0.2.0"
 
 # Check for --version argument
 if [ "$1" = "--version" ]; then
@@ -74,6 +74,34 @@ cru a DNSWatchdog "*/5 * * * * /jffs/scripts/dns_watchdog.sh"
 echo "✓ Created cron job: DNS Watchdog runs every 5 minutes"
 echo ""
 
+# Persist cron job across reboots
+# cru registrations live in RAM and are wiped on every reboot; Asuswrt-Merlin
+# re-runs /jffs/scripts/services-start at each boot, so the job must be
+# re-added from there or the watchdog silently dies at the first reboot.
+echo "Persisting cron job across reboots..."
+SERVICES_START="/jffs/scripts/services-start"
+CRON_LINE='cru a DNSWatchdog "*/5 * * * * /jffs/scripts/dns_watchdog.sh"'
+
+if [ ! -f "$SERVICES_START" ]; then
+    printf '#!/bin/sh\n' > "$SERVICES_START"
+    chmod 755 "$SERVICES_START"
+    echo "✓ Created $SERVICES_START"
+fi
+
+if grep -q "DNSWatchdog" "$SERVICES_START"; then
+    echo "✓ Boot registration already present in $SERVICES_START"
+else
+    echo "$CRON_LINE" >> "$SERVICES_START"
+    echo "✓ Added boot registration to $SERVICES_START"
+fi
+
+# The firmware only runs services-start if it is executable
+if [ ! -x "$SERVICES_START" ]; then
+    chmod 755 "$SERVICES_START"
+    echo "✓ Made $SERVICES_START executable"
+fi
+echo ""
+
 # Verify installation
 echo "Verifying installation..."
 if [ -L "/jffs/scripts/dns_watchdog.sh" ] && [ -L "/jffs/scripts/telegram_notify.sh" ] && [ -L "/jffs/scripts/telegram.conf" ]; then
@@ -88,6 +116,14 @@ if cru l | grep -q "DNSWatchdog"; then
     echo "✓ Cron job installed successfully"
 else
     echo "✗ Error installing cron job"
+    exit 1
+fi
+
+# Check boot persistence
+if [ -x "$SERVICES_START" ] && grep -q "DNSWatchdog" "$SERVICES_START"; then
+    echo "✓ Cron job will be re-registered at boot via services-start"
+else
+    echo "✗ Error persisting cron job in $SERVICES_START"
     exit 1
 fi
 
