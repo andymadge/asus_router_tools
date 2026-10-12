@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- USB Health Check (`usb_health_check.sh` 0.1.0): hourly check for a failing USB disk, with Telegram alerts. It watches the kernel log for media/filesystem errors, amtm's boot-time disk check log for filesystem errors, and USB filesystems remounted read-only. Each problem is alerted once, and there's a daily heartbeat. Motivated by a router USB stick that amtm had flagged at almost every boot for ~18 months unnoticed, until it failed with physical read errors.
+- install.sh 0.3.0 installs the USB Health Check (symlink, hourly cron job, boot persistence via services-start), using a shared helper for registering cron jobs.
 - Failure diagnosis in dns_watchdog.sh (0.4.0): when DNS is still broken after a dnsmasq restart, the watchdog now tests the upstream servers directly and checks whether DNSSEC is enabled, then names the likely cause in the log and the Telegram alert: upstream/WAN outage, DNSSEC validation failure (e.g. a stale root trust anchor after the October 2026 root KSK rollover), or unknown. The alert no longer blindly recommends a router reboot, which can't fix the first two.
 - Daily heartbeat log line in dns_watchdog.sh (0.3.0): healthy checks are silent by design, which made a dead watchdog indistinguishable from a healthy one — now one "Heartbeat: watchdog alive" line is logged per day, plus on the first run after each reboot (/tmp is wiped), so `grep Heartbeat /tmp/dns_watchdog.log` always answers "when did it last run?"
 

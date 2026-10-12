@@ -1,6 +1,6 @@
 # ASUS Router Tools
 
-A collection of utilities and monitoring tools for ASUS routers running Asuswrt-Merlin firmware. Currently includes DNS monitoring with Telegram notifications, with more router management tools planned for future releases.
+A collection of utilities and monitoring tools for ASUS routers running Asuswrt-Merlin firmware. Currently includes DNS monitoring and USB storage health monitoring with Telegram notifications, with more router management tools planned for future releases.
 
 ## Current Tools
 
@@ -18,6 +18,20 @@ There is a common problem with dnsmasq on ASUS routers where it will randomly st
 - Daily heartbeat log line — healthy runs are otherwise silent, so the heartbeat proves the watchdog is alive (also logged on first run after each reboot)
 - Configurable test domain (default: `google.com`)
 - Router reboot protection as last resort (currently commented out)
+
+### USB Health Check
+USB sticks used for Entware, swap or traffic history wear out, and a failing stick causes confusing errors elsewhere long before anyone notices it. amtm's boot-time disk check may already be reporting errors in a log nobody reads. This script watches for those signs and sends a Telegram alert.
+
+**Checks (hourly via cron, survives reboots):**
+- **Kernel log**: media and filesystem errors on USB disks (`Unrecovered read error`, `critical medium error`, `EXT4-fs error`, …)
+- **amtm disk check**: new results in `/jffs/addons/amtm/disk_check.log` that report filesystem errors (`RUN fsck MANUALLY`)
+- **Read-only remounts**: a USB filesystem the kernel has switched to read-only after errors
+
+**Key Features:**
+- Alerts once per problem, not on every run
+- Daily heartbeat log line, including while a known problem persists, so a dead check is distinguishable from a quiet one
+- Logs to `/tmp/usb_health_check.log` and syslog
+- Inputs can be overridden with environment variables for testing (see the script header)
 
 ## Quick Setup
 
@@ -167,13 +181,14 @@ cd /jffs/asus_router_tools
 git pull
 ```
 
-No need to reinstall or reconfigure - symlinks automatically use the updated scripts.
+No need to reinstall or reconfigure - symlinks automatically use the updated scripts. (Exception: when an update adds a new tool, re-run `./install.sh` to register its symlink and cron job. Upgrading to install.sh 0.3.0 adds the USB Health Check.)
 
 ## File Structure
 
 ```
 asus_router_tools/
 ├── dns_watchdog.sh          # DNS monitoring script
+├── usb_health_check.sh      # USB storage health monitoring
 ├── telegram_notify.sh       # Telegram notification system  
 ├── telegram.conf.example    # Configuration template
 ├── telegram.conf            # Your credentials (not in git)
@@ -201,6 +216,7 @@ asus_router_tools/
    trust-anchor=.,38696,8,2,683D2D0ACB8C9B712A1948B27F741219298D0A450D612C483AF444A4C0FB2B16
    ```
    Temporary workaround: disable DNSSEC (WAN → Internet Connection).
+6. **"USB Disk Errors" / "USB Disk Check Failed" alert**: the USB disk is reporting media or filesystem errors. Confirm with `dmesg | grep -iE 'medium error|EXT4-fs error'` and `tail /jffs/addons/amtm/disk_check.log`. Media errors ("Unrecovered read error") mean failing hardware, which fsck can't repair: back up anything needed (e.g. traffic history in `nvram get rstats_path`) and replace the stick. Small "nano" sticks run hot and wear quickly; prefer a normal-sized stick and avoid swap if the router doesn't need it.
 
 ### Support
 
