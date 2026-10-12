@@ -4,12 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Project Overview
 
-Collection of ASUS router utility scripts for RT-AX86U Pro running Asuswrt-Merlin firmware. Primary focus: DNS watchdog system that monitors and automatically fixes DNS resolution issues.
+Collection of ASUS router utility scripts for RT-AX86U Pro running Asuswrt-Merlin firmware. Primary focus: DNS watchdog system that monitors and automatically fixes DNS resolution issues, plus a USB storage health check.
 
 ## System Architecture
 
 ### Core Scripts
 - **`dns_watchdog.sh`** - Main DNS monitoring script, tests against local dnsmasq (127.0.0.1)  
+- **`usb_health_check.sh`** - Hourly USB disk health check (kernel errors, amtm disk check, read-only remounts)
 - **`telegram_notify.sh`** - Notification system using direct IPs for DNS-outage resilience  
 - **`install.sh`** - Symlinked deployment for easy git-based updates  
 
@@ -94,7 +95,8 @@ telegram.conf
 **Current versions:**
 - `dns_watchdog.sh`: 0.4.0
 - `telegram_notify.sh`: 0.2.0  
-- `install.sh`: 0.2.0
+- `install.sh`: 0.3.0
+- `usb_health_check.sh`: 0.1.0
 
 ## Configuration & Setup
 
