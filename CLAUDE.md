@@ -92,7 +92,7 @@ telegram.conf
 - **PATCH** - Bug fixes, documentation updates
 
 **Current versions:**
-- `dns_watchdog.sh`: 0.3.0
+- `dns_watchdog.sh`: 0.4.0
 - `telegram_notify.sh`: 0.2.0  
 - `install.sh`: 0.2.0
 

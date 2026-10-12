@@ -85,7 +85,7 @@ The DNS watchdog system consists of two main components:
    - Uses `google.com` as the default test domain
    - Runs every 5 minutes via cron job (registered at install and re-registered at every boot via `/jffs/scripts/services-start` — `cru` entries live in RAM and are lost on reboot)
    - Automatically restarts dnsmasq when DNS failures are detected
-   - Escalates to router reboot if DNS issues persist
+   - If DNS is still broken after the restart, diagnoses why (upstream/WAN outage vs DNSSEC validation failure vs unknown) and only recommends a reboot when that could actually help
    - Logs to both file (`/tmp/dns_watchdog.log`) and syslog
 
 2. **telegram_notify.sh** - Notification system that:
@@ -144,7 +144,7 @@ The DNS watchdog sends three types of Telegram notifications:
 
 1. **DNS Failure** 🚨 - When DNS resolution initially fails
 2. **DNS Recovery** ✅ - When DNS is restored after dnsmasq restart
-3. **Critical Failure** 🚨 - When DNS persists after restart (before reboot)
+3. **Critical Failure** 🚨 - When DNS failure persists after restart, with a diagnosis and a matching recommendation
 
 ### Configuration
 
@@ -196,6 +196,11 @@ asus_router_tools/
 2. **Cron job not running**: Verify with `cru l` and check system time. If it's missing after a reboot, check `/jffs/scripts/services-start` exists, is executable, and contains the `cru a DNSWatchdog` line (installs made with install.sh < 0.2.0 didn't set this up — re-run `./install.sh`)
 3. **DNS false positives**: Test with different domain in script
 4. **Permission errors**: Ensure scripts are executable (`chmod +x`)
+5. **"Likely DNSSEC validation failure" alert**: upstream DNS works but dnsmasq rejects everything, and rebooting won't help. Most likely cause: the firmware's hard-coded DNSSEC root trust anchor is out of date. The root zone switched to KSK-2024 (key tag 38696) on 11 October 2026; Asuswrt-Merlin includes it from 3006.102.7. Fix: update the firmware, or add the anchor to `/jffs/configs/dnsmasq.conf.add` and `service restart_dnsmasq`:
+   ```
+   trust-anchor=.,38696,8,2,683D2D0ACB8C9B712A1948B27F741219298D0A450D612C483AF444A4C0FB2B16
+   ```
+   Temporary workaround: disable DNSSEC (WAN → Internet Connection).
 
 ### Support
 

@@ -23,7 +23,7 @@
 #     cru d DNSWatchdogVerbose
 #     cru a DNSWatchdog "*/5 * * * * /jffs/scripts/dns_watchdog.sh"
 
-VERSION="0.3.0"
+VERSION="0.4.0"
 LOGFILE="/tmp/dns_watchdog.log"
 HEARTBEAT_FILE="/tmp/dns_watchdog_heartbeat"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
@@ -84,17 +84,19 @@ get_dnsmasq_info() {
 }
 
 # Improved DNS test function (silent fallback)
+# Usage: test_dns [server]   (default: local dnsmasq at 127.0.0.1)
 test_dns() {
+    local server="${1:-127.0.0.1}"
     # Try with timeout if available, otherwise silently use background process with kill
     if command -v timeout >/dev/null 2>&1; then
-        timeout 10 nslookup $TEST_DOMAIN 127.0.0.1 >/dev/null 2>&1
+        timeout 10 nslookup $TEST_DOMAIN $server >/dev/null 2>&1
         return $?
     else
         # Silent fallback method
         TEMP_FILE="/tmp/dns_test_$$"
-        
+
         # Run nslookup in background and capture PID
-        nslookup $TEST_DOMAIN 127.0.0.1 >"$TEMP_FILE" 2>&1 &
+        nslookup $TEST_DOMAIN $server >"$TEMP_FILE" 2>&1 &
         DNS_PID=$!
         
         # Wait up to 10 seconds (using 1-second intervals)
@@ -117,6 +119,46 @@ test_dns() {
         rm -f "$TEMP_FILE"
         return 1
     fi
+}
+
+# Work out *why* DNS is still failing after a dnsmasq restart, so the alert
+# points at the right fix. A blanket "reboot the router" is wrong for the
+# commonest persistent causes: rebooting can't fix an unreachable upstream or
+# a DNSSEC validation failure (e.g. a stale root trust anchor after a root KSK
+# rollover, as happened on 2026-10-11).
+# Sets DIAG_CAUSE (upstream_down | dnssec | unknown) and DIAG_DETAIL.
+diagnose_persistent_failure() {
+    DIAG_CAUSE="unknown"
+    DIAG_DETAIL=""
+
+    # Upstream servers dnsmasq forwards to (written by the firmware)
+    UPSTREAMS=$(sed -n 's/^server=\([0-9.]*\)$/\1/p' /tmp/resolv.dnsmasq 2>/dev/null | head -2)
+    [ -z "$UPSTREAMS" ] && UPSTREAMS="1.1.1.1"
+
+    UPSTREAM_OK=""
+    for SERVER in $UPSTREAMS; do
+        if test_dns "$SERVER"; then
+            UPSTREAM_OK="$SERVER"
+            log_message "Diagnosis: upstream $SERVER resolves $TEST_DOMAIN OK"
+            break
+        fi
+        log_message "Diagnosis: upstream $SERVER also FAILS to resolve $TEST_DOMAIN"
+    done
+
+    if [ -z "$UPSTREAM_OK" ]; then
+        DIAG_CAUSE="upstream_down"
+        DIAG_DETAIL="Upstream DNS ($(echo $UPSTREAMS | tr ' ' ',')) unreachable - likely a WAN/ISP outage, not dnsmasq"
+    elif grep -q '^dnssec$' /etc/dnsmasq.conf 2>/dev/null; then
+        # Upstream answers but dnsmasq won't: with DNSSEC on, validation
+        # failure is the prime suspect. Log the trusted root key tags so they
+        # can be compared with: dig +dnssec . DNSKEY | grep RRSIG
+        ANCHORS=$(echo $(sed -n 's/^trust-anchor=\.,\([0-9]*\),.*/\1/p' /etc/dnsmasq.conf))
+        DIAG_CAUSE="dnssec"
+        DIAG_DETAIL="Upstream $UPSTREAM_OK works but dnsmasq fails, with DNSSEC on - likely DNSSEC validation failure (trusted root key tags: ${ANCHORS:-none})"
+    else
+        DIAG_DETAIL="Upstream $UPSTREAM_OK works but dnsmasq fails (DNSSEC off) - cause unknown"
+    fi
+    log_message "Diagnosis: $DIAG_DETAIL"
 }
 
 # Start logging
@@ -182,12 +224,27 @@ else
         log_message "CRITICAL FAILURE - DNS still not working after dnsmasq restart"
         log_message "Pre-reboot memory: $(cat /proc/meminfo | grep MemAvailable)"
         log_message "Pre-reboot uptime: $(uptime)"
-        log_message "=== MANUAL ROUTER REBOOT RECOMMENDED ==="
+
+        diagnose_persistent_failure
+        case "$DIAG_CAUSE" in
+            upstream_down)
+                RECOMMENDATION="Check the internet connection / ISP. A router reboot is unlikely to help unless the WAN link itself is stuck."
+                ;;
+            dnssec)
+                RECOMMENDATION="Rebooting will NOT help. Check the DNSSEC root trust anchor (outdated firmware after a root KSK rollover?), or disable DNSSEC as a temporary workaround."
+                ;;
+            *)
+                RECOMMENDATION="Manual router reboot recommended."
+                ;;
+        esac
+        log_message "=== RECOMMENDATION: $RECOMMENDATION ==="
+
         # Send critical failure notification
         if [ -f "/jffs/scripts/telegram_notify.sh" ]; then
             /jffs/scripts/telegram_notify.sh "🚨 <b>CRITICAL: DNS Failure Persists</b>
 <i>dnsmasq restart failed to resolve DNS issues.</i>
-⚠️ <b>Recommendation:</b> Manual router reboot recommended" &
+🔍 <b>Diagnosis:</b> $DIAG_DETAIL
+⚠️ <b>Recommendation:</b> $RECOMMENDATION" &
         fi
         # Reboot command commented out - manual intervention required
         # reboot
