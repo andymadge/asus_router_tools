@@ -1,9 +1,10 @@
 #!/bin/sh
-# Installation script for ASUS Router Tools (DNS Watchdog, USB Health Check)
+# Installation script for ASUS Router Tools (DNS Watchdog, USB Health Check,
+# Firmware Check)
 # with Telegram notifications
 # Run this script on your ASUS router after cloning the repo
 
-VERSION="0.3.0"
+VERSION="0.4.0"
 
 # Check for --version argument
 if [ "$1" = "--version" ]; then
@@ -36,17 +37,20 @@ echo "Creating symlinks in /jffs/scripts/..."
 # Remove existing files/symlinks if they exist
 rm -f /jffs/scripts/dns_watchdog.sh
 rm -f /jffs/scripts/usb_health_check.sh
+rm -f /jffs/scripts/firmware_check.sh
 rm -f /jffs/scripts/telegram_notify.sh
 rm -f /jffs/scripts/telegram.conf
 
 # Create symlinks
 ln -sf "$SCRIPT_DIR/dns_watchdog.sh" /jffs/scripts/dns_watchdog.sh
 ln -sf "$SCRIPT_DIR/usb_health_check.sh" /jffs/scripts/usb_health_check.sh
+ln -sf "$SCRIPT_DIR/firmware_check.sh" /jffs/scripts/firmware_check.sh
 ln -sf "$SCRIPT_DIR/telegram_notify.sh" /jffs/scripts/telegram_notify.sh
 ln -sf "$SCRIPT_DIR/telegram.conf" /jffs/scripts/telegram.conf
 
 echo "✓ Created symlink: /jffs/scripts/dns_watchdog.sh -> $SCRIPT_DIR/dns_watchdog.sh"
 echo "✓ Created symlink: /jffs/scripts/usb_health_check.sh -> $SCRIPT_DIR/usb_health_check.sh"
+echo "✓ Created symlink: /jffs/scripts/firmware_check.sh -> $SCRIPT_DIR/firmware_check.sh"
 echo "✓ Created symlink: /jffs/scripts/telegram_notify.sh -> $SCRIPT_DIR/telegram_notify.sh"
 echo "✓ Created symlink: /jffs/scripts/telegram.conf -> $SCRIPT_DIR/telegram.conf"
 echo ""
@@ -101,6 +105,7 @@ install_cron_job() {
 echo "Setting up cron jobs..."
 install_cron_job DNSWatchdog "*/5 * * * * /jffs/scripts/dns_watchdog.sh" "DNS Watchdog runs every 5 minutes"
 install_cron_job USBHealthCheck "17 * * * * /jffs/scripts/usb_health_check.sh" "USB Health Check runs hourly"
+install_cron_job FirmwareCheck "43 10 * * * /jffs/scripts/firmware_check.sh" "Firmware Check runs daily at 10:43"
 
 # The firmware only runs services-start if it is executable
 if [ ! -x "$SERVICES_START" ]; then
@@ -111,7 +116,7 @@ echo ""
 
 # Verify installation
 echo "Verifying installation..."
-if [ -L "/jffs/scripts/dns_watchdog.sh" ] && [ -L "/jffs/scripts/usb_health_check.sh" ] && [ -L "/jffs/scripts/telegram_notify.sh" ] && [ -L "/jffs/scripts/telegram.conf" ]; then
+if [ -L "/jffs/scripts/dns_watchdog.sh" ] && [ -L "/jffs/scripts/usb_health_check.sh" ] && [ -L "/jffs/scripts/firmware_check.sh" ] && [ -L "/jffs/scripts/telegram_notify.sh" ] && [ -L "/jffs/scripts/telegram.conf" ]; then
     echo "✓ Symlinks created successfully"
 else
     echo "✗ Error creating symlinks"
@@ -119,7 +124,7 @@ else
 fi
 
 # Check cron jobs and boot persistence
-for NAME in DNSWatchdog USBHealthCheck; do
+for NAME in DNSWatchdog USBHealthCheck FirmwareCheck; do
     if cru l | grep -q "$NAME"; then
         echo "✓ Cron job $NAME installed successfully"
     else
@@ -142,9 +147,10 @@ echo "1. Edit $SCRIPT_DIR/telegram.conf with your Telegram credentials"
 echo "2. Test Telegram notifications: /jffs/scripts/telegram_notify.sh"
 echo "3. Test DNS watchdog: /jffs/scripts/dns_watchdog.sh --verbose"
 echo "4. Test USB health check: /jffs/scripts/usb_health_check.sh --verbose"
+echo "5. Test firmware check: /jffs/scripts/firmware_check.sh --verbose"
 echo ""
 echo "To update scripts in the future, run:"
 echo "  cd $SCRIPT_DIR && git pull"
 echo ""
 echo "View cron jobs: cru l"
-echo "View logs: tail -f /tmp/dns_watchdog.log /tmp/usb_health_check.log"
+echo "View logs: tail -f /tmp/dns_watchdog.log /tmp/usb_health_check.log /tmp/firmware_check.log"
