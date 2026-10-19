@@ -1,6 +1,6 @@
 # ASUS Router Tools
 
-A collection of utilities and monitoring tools for ASUS routers running Asuswrt-Merlin firmware. Currently includes DNS monitoring and USB storage health monitoring with Telegram notifications, with more router management tools planned for future releases.
+A collection of utilities and monitoring tools for ASUS routers running Asuswrt-Merlin firmware. Currently includes DNS monitoring, USB storage health monitoring and firmware update alerts with Telegram notifications, with more router management tools planned for future releases.
 
 ## Current Tools
 
@@ -32,6 +32,17 @@ USB sticks used for Entware, swap or traffic history wear out, and a failing sti
 - Daily heartbeat log line, including while a known problem persists, so a dead check is distinguishable from a quiet one
 - Logs to `/tmp/usb_health_check.log` and syslog
 - Inputs can be overridden with environment variables for testing (see the script header)
+
+### Firmware Check
+The firmware checks for new releases every day, but only shows the result as a banner in the web UI, so a router nobody logs into falls months behind. Stale firmware is risky in its own right: in October 2026 a DNSSEC root key change broke all DNS on firmware that predated the fix by ~8 months. This script turns the firmware's own check into a Telegram alert.
+
+**Key Features:**
+- Reads the firmware's update check result from nvram (`webs_state_flag`, `webs_state_info`); no extra network requests
+- One alert per new release, and one reminder if it's still not installed 30 days after the alert
+- Runs daily via cron (survives reboots); state persists in `/jffs/addons/asus_router_tools/`
+- Daily heartbeat log line, which also notes when the firmware's own update check is failing (`webs_state_error`)
+- Logs to `/tmp/firmware_check.log` and syslog
+- Inputs can be overridden with environment variables for testing, and `FW_CHECK_DRY_RUN=1` prints alerts instead of sending them (see the script header)
 
 ## Quick Setup
 
@@ -181,7 +192,7 @@ cd /jffs/asus_router_tools
 git pull
 ```
 
-No need to reinstall or reconfigure - symlinks automatically use the updated scripts. (Exception: when an update adds a new tool, re-run `./install.sh` to register its symlink and cron job. Upgrading to install.sh 0.3.0 adds the USB Health Check.)
+No need to reinstall or reconfigure - symlinks automatically use the updated scripts. (Exception: when an update adds a new tool, re-run `./install.sh` to register its symlink and cron job. Upgrading to install.sh 0.3.0 adds the USB Health Check; 0.4.0 adds the Firmware Check.)
 
 ## File Structure
 
@@ -189,6 +200,7 @@ No need to reinstall or reconfigure - symlinks automatically use the updated scr
 asus_router_tools/
 ├── dns_watchdog.sh          # DNS monitoring script
 ├── usb_health_check.sh      # USB storage health monitoring
+├── firmware_check.sh        # Firmware update alerts
 ├── telegram_notify.sh       # Telegram notification system  
 ├── telegram.conf.example    # Configuration template
 ├── telegram.conf            # Your credentials (not in git)
@@ -217,6 +229,7 @@ asus_router_tools/
    ```
    Temporary workaround: disable DNSSEC (WAN → Internet Connection).
 6. **"USB Disk Errors" / "USB Disk Check Failed" alert**: the USB disk is reporting media or filesystem errors. Confirm with `dmesg | grep -iE 'medium error|EXT4-fs error'` and `tail /jffs/addons/amtm/disk_check.log`. Media errors ("Unrecovered read error") mean failing hardware, which fsck can't repair: back up anything needed (e.g. traffic history in `nvram get rstats_path`) and replace the stick. Small "nano" sticks run hot and wear quickly; prefer a normal-sized stick and avoid swap if the router doesn't need it.
+7. **"Router Firmware Update Available" alert**: check the [Merlin changelog](https://www.asuswrt-merlin.net/changelog) and skim the release thread on SNBForums, then update at a quiet time (Administration → Firmware Upgrade). After the update, the next daily run clears the alert state. No alerts at all? Check `grep Heartbeat /tmp/firmware_check.log`; a heartbeat mentioning "update check reports error" means the firmware itself can't reach ASUS's update server.
 
 ### Support
 
