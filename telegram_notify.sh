@@ -2,7 +2,7 @@
 # Telegram Notification Script for ASUS Router
 # Works even when DNS is down by using direct IP addresses
 
-VERSION="0.3.0"
+VERSION="0.3.1"
 
 # SETUP INSTRUCTIONS:
 # 1. Message @BotFather on Telegram and create a bot with /newbot
@@ -35,7 +35,8 @@ else
 fi
 
 # Telegram API server IPs (fallback when DNS is down)
-TELEGRAM_IPS="149.154.167.50 149.154.167.51 149.154.167.220 149.154.167.99"
+# Checked 2026-10-19 with --resolve; refresh with: nslookup api.telegram.org
+TELEGRAM_IPS="149.154.166.110 149.154.167.220 149.154.167.99"
 
 # Queue configuration
 QUEUE_FILE="/tmp/telegram_queue.txt"
@@ -85,79 +86,76 @@ get_queue_size() {
     grep -c . "$QUEUE_FILE" 2>/dev/null || echo "0"
 }
 
+# POST a message to the Bot API and print the HTTP status ("000" if there was
+# no response). Extra arguments go to curl, e.g. --resolve to pin an IP.
+post_message() {
+    local message="$1"
+    shift
+    curl -s -o /dev/null -w "%{http_code}" -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+        -d "chat_id=${CHAT_ID}" \
+        --data-urlencode "text=${message}" \
+        -d "parse_mode=HTML" \
+        --connect-timeout 10 --max-time 30 "$@" 2>/dev/null
+}
+
 # Function to send raw telegram message (without queue processing)
+# Returns 0 if sent, 1 if it may succeed later (no connection, 5xx, 429), or
+# 2 if Telegram rejected it permanently (other 4xx, e.g. bad token or HTML it
+# can't parse), which retrying won't fix.
 send_telegram_raw() {
     local message="$1"
-    local success=0
-    
-    # First try with hostname (if DNS works)
-    if curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-        -d "chat_id=${CHAT_ID}" \
-        -d "text=${message}" \
-        -d "parse_mode=HTML" \
-        --connect-timeout 10 --max-time 30 >/dev/null 2>&1; then
-        return 0
-    fi
-    
-    # If hostname fails, try direct IPs
-    for ip in $TELEGRAM_IPS; do
-        if curl -s -X POST "https://${ip}/bot${BOT_TOKEN}/sendMessage" \
-            -H "Host: api.telegram.org" \
-            -d "chat_id=${CHAT_ID}" \
-            -d "text=${message}" \
-            -d "parse_mode=HTML" \
-            --connect-timeout 10 --max-time 30 >/dev/null 2>&1; then
-            success=1
-            break
+    local code
+
+    # First try with hostname (if DNS works), then pin each known API address
+    # with --resolve: during a DNS outage the hostname can't be looked up, and
+    # the TLS certificate is only valid for the name, not the bare IP
+    for ip in "" $TELEGRAM_IPS; do
+        if [ -z "$ip" ]; then
+            code=$(post_message "$message")
+        else
+            code=$(post_message "$message" --resolve "api.telegram.org:443:${ip}")
         fi
+        case "$code" in
+            2??) return 0 ;;
+            429) return 1 ;;
+            4??) return 2 ;;
+        esac
     done
-    
-    return $((1 - success))
+
+    return 1
 }
 
 # Function to process queued messages
 process_queue() {
-    if [ ! -f "$QUEUE_FILE" ] || [ ! -s "$QUEUE_FILE" ]; then
+    if [ ! -s "$QUEUE_FILE" ]; then
         return 0
     fi
-    
-    local temp_file="${QUEUE_FILE}.tmp"
-    local temp_processed="${QUEUE_FILE}.processed"
-    local line_num=0
-    local sent_count=0
-    local failed_messages=""
-    
-    # Process each message in the queue
+
+    # Take the whole queue atomically, so a notifier running at the same time
+    # (e.g. a backgrounded DNS Watchdog alert) neither sends these messages
+    # again nor has a message it queues meanwhile overwritten. Messages that
+    # still fail are appended back.
+    local work_file="${QUEUE_FILE}.$$"
+    local rc
+    mv "$QUEUE_FILE" "$work_file" 2>/dev/null || return 0
+
     while IFS= read -r escaped_message; do
-        line_num=$((line_num + 1))
-        
-        if [ -n "$escaped_message" ]; then
-            local message=$(unescape_message "$escaped_message")
-            
-            if send_telegram_raw "$message"; then
-                sent_count=$((sent_count + 1))
-            else
-                # Keep failed message for retry
-                if [ -n "$failed_messages" ]; then
-                    failed_messages="${failed_messages}\n${escaped_message}"
-                else
-                    failed_messages="$escaped_message"
-                fi
-            fi
+        [ -n "$escaped_message" ] || continue
+        local message=$(unescape_message "$escaped_message")
+
+        send_telegram_raw "$message"
+        rc=$?
+        if [ "$rc" = "2" ]; then
+            # Rejected by Telegram: retrying won't help, so drop it rather
+            # than let it block the queue forever, but say what was lost
+            logger "Telegram rejected a queued message; dropped it: $(printf '%s' "$message" | tr '\n' ' ' | cut -c1-80)"
+        elif [ "$rc" != "0" ]; then
+            # Keep failed message for retry
+            echo "$escaped_message" >> "$QUEUE_FILE"
         fi
-    done < "$QUEUE_FILE"
-    
-    # Update queue with only failed messages
-    if [ -n "$failed_messages" ]; then
-        printf %b "$failed_messages" > "$temp_file" 2>/dev/null && mv "$temp_file" "$QUEUE_FILE"
-    else
-        # All messages sent successfully, clear queue
-        rm -f "$QUEUE_FILE" 2>/dev/null
-    fi
-    
-    # Clean up temp files
-    rm -f "$temp_file" "$temp_processed" 2>/dev/null
-    
+    done < "$work_file"
+
+    rm -f "$work_file"
     return 0
 }
 
@@ -165,15 +163,28 @@ process_queue() {
 send_telegram() {
     local message="$1"
     local queue_size
+    local rc
     
     # First, try to process any existing queued messages
     process_queue
     
     # Try to send the new message
-    if send_telegram_raw "$message"; then
+    send_telegram_raw "$message"
+    rc=$?
+    if [ "$rc" = "0" ]; then
         return 0
+    elif [ "$rc" = "2" ]; then
+        # Rejected by Telegram (bad token, malformed message): queuing won't help
+        logger "Telegram rejected the message (check telegram.conf and the message HTML); not queued"
+        return 2
     fi
     
+    # Callers that retry undelivered alerts themselves set TELEGRAM_NO_QUEUE=1,
+    # so a queued copy isn't delivered as well (a duplicate)
+    if [ "$TELEGRAM_NO_QUEUE" = "1" ]; then
+        return 1
+    fi
+
     # Message failed to send, check if we can queue it
     if is_queue_full; then
         # Queue is full, send overflow notification instead of queuing
@@ -257,16 +268,19 @@ $*
 <b>🕐 Time:</b> <code>${TIMESTAMP}</code>"
     fi
     
-    # Send the message
-    if send_telegram "$MESSAGE"; then
+    # Send the message. Exit status: 0 sent, 1 failed (queued, or for
+    # TELEGRAM_NO_QUEUE callers worth retrying), 2 rejected by Telegram
+    # (retrying won't help)
+    send_telegram "$MESSAGE"
+    rc=$?
+    if [ "$rc" = "0" ]; then
         echo "Telegram notification sent successfully"
         logger "Telegram notification sent: $*"
-        return 0
     else
         echo "Failed to send Telegram notification"
         logger "Failed to send Telegram notification: $*"
-        return 1
     fi
+    return $rc
 }
 
 # Execute main function with all arguments
