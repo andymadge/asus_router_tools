@@ -1,6 +1,6 @@
 #!/bin/sh
 # USB Storage Health Check for ASUS routers with Asuswrt-Merlin
-# Version: 0.1.0
+# Version: 0.1.1
 #
 # Alerts (via Telegram) when a USB disk attached to the router shows signs of
 # failing, so a dying stick is noticed before whatever lives on it (Entware,
@@ -25,10 +25,11 @@
 #   USB_HEALTH_STATE_DIR=/tmp/usb_test_state \
 #   /jffs/scripts/usb_health_check.sh --verbose
 
-VERSION="0.1.0"
+VERSION="0.1.1"
 LOGFILE="/tmp/usb_health_check.log"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 VERBOSE=0
+LOG_PREFIX="USB Health"
 
 # Inputs (overridable for testing)
 DMESG_SOURCE="${USB_HEALTH_DMESG_SOURCE:-}"
@@ -58,29 +59,8 @@ elif [ "$1" = "--verbose" ]; then
     echo "USB Health Check running in VERBOSE mode"
 fi
 
-# Function to log with timestamp (file + syslog)
-log_message() {
-    echo "[$TIMESTAMP] USB Health: $1" >> $LOGFILE
-    logger "USB Health: $1"
-    if [ "$VERBOSE" = "1" ]; then
-        echo "[$TIMESTAMP] USB Health: $1"
-    fi
-}
-
-# Function to log only in verbose mode
-log_verbose() {
-    if [ "$VERBOSE" = "1" ]; then
-        echo "[$TIMESTAMP] USB Health: $1" >> $LOGFILE
-        echo "[$TIMESTAMP] USB Health: $1"
-    fi
-}
-
-# Send a Telegram alert if the notifier is installed
-send_alert() {
-    if [ -f "/jffs/scripts/telegram_notify.sh" ]; then
-        /jffs/scripts/telegram_notify.sh "$1" &
-    fi
-}
+# Shared helpers: log_message, log_verbose, send_alert, trim_log
+. "$(dirname "$(readlink -f "$0")")/lib_common.sh"
 
 # Escape text for Telegram HTML messages
 html_escape() {
@@ -211,19 +191,7 @@ if [ "$(cat "$HEARTBEAT_FILE" 2>/dev/null)" != "$TODAY" ]; then
 fi
 log_verbose "=== USB Health Check Completed ==="
 
-# Trim the log if it gets large
-if [ -f "$LOGFILE" ]; then
-    LINE_COUNT=$(wc -l < "$LOGFILE" 2>/dev/null)
-    if [ "$LINE_COUNT" -gt 500 ] 2>/dev/null; then
-        TEMP_LOG="/tmp/usb_health_check_trim_$$"
-        tail -500 "$LOGFILE" > "$TEMP_LOG" 2>/dev/null
-        if [ -s "$TEMP_LOG" ]; then
-            mv "$TEMP_LOG" "$LOGFILE"
-        else
-            rm -f "$TEMP_LOG"
-        fi
-    fi
-fi
+trim_log
 
 if [ "$VERBOSE" = "1" ]; then
     echo "USB Health Check verbose check completed"

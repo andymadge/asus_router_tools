@@ -12,6 +12,7 @@ Collection of ASUS router utility scripts for RT-AX86U Pro running Asuswrt-Merli
 - **`dns_watchdog.sh`** - Main DNS monitoring script, tests against local dnsmasq (127.0.0.1)  
 - **`usb_health_check.sh`** - Hourly USB disk health check (kernel errors, amtm disk check, read-only remounts)
 - **`firmware_check.sh`** - Daily alert when a new Merlin firmware release is available (one reminder after 30 days)
+- **`lib_common.sh`** - Shared logging/alert/log-trim helpers, sourced by the check scripts
 - **`telegram_notify.sh`** - Notification system using direct IPs for DNS-outage resilience  
 - **`install.sh`** - Symlinked deployment for easy git-based updates  
 
@@ -97,8 +98,9 @@ telegram.conf
 - `dns_watchdog.sh`: 0.4.0
 - `telegram_notify.sh`: 0.2.0  
 - `install.sh`: 0.4.0
-- `usb_health_check.sh`: 0.1.0
+- `usb_health_check.sh`: 0.1.1
 - `firmware_check.sh`: 0.1.0
+- `lib_common.sh`: 0.1.0
 
 ## Configuration & Setup
 

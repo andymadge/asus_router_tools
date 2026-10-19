@@ -8,7 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Firmware Check (`firmware_check.sh` 0.1.0): daily Telegram alert when a new Asuswrt-Merlin release is available, plus one reminder if it's still not installed 30 days after the alert. It reads the firmware's own daily update check from nvram (`webs_state_flag`/`webs_state_info`), which otherwise only shows as a web UI banner. Daily heartbeat; the heartbeat also notes when the firmware's own check is failing. Motivated by the October 2026 DNS outage, caused by firmware ~8 months behind the release that carried the new DNSSEC root key.
+- Firmware Check (`firmware_check.sh` 0.1.0): daily Telegram alert when a new Asuswrt-Merlin release is available, plus one reminder if it's still not installed 30 days after the alert. It reads the firmware's own daily update check from nvram (`webs_state_flag`/`webs_state_info`), which otherwise only shows as a web UI banner. Versions are compared numerically, so a manually installed newer build isn't reported as out of date. It also alerts once if the firmware's own update check is turned off. An alert that Telegram doesn't accept is retried on the next run instead of being marked as sent. Daily heartbeat; the heartbeat also notes when the firmware's own check is failing. Motivated by the October 2026 DNS outage, caused by firmware ~8 months behind the release that carried the new DNSSEC root key.
+- `lib_common.sh`: shared logging, alert and log-trim helpers for the check scripts, sourced via the script's real path (no extra symlink needed).
 - install.sh 0.4.0 installs the Firmware Check (symlink, daily cron job at 10:43, boot persistence via services-start).
 - USB Health Check (`usb_health_check.sh` 0.1.0): hourly check for a failing USB disk, with Telegram alerts. It watches the kernel log for media/filesystem errors, amtm's boot-time disk check log for filesystem errors, and USB filesystems remounted read-only. Each problem is alerted once, and there's a daily heartbeat. Motivated by a router USB stick that amtm had flagged at almost every boot for ~18 months unnoticed, until it failed with physical read errors.
 - install.sh 0.3.0 installs the USB Health Check (symlink, hourly cron job, boot persistence via services-start), using a shared helper for registering cron jobs.
@@ -16,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Daily heartbeat log line in dns_watchdog.sh (0.3.0): healthy checks are silent by design, which made a dead watchdog indistinguishable from a healthy one — now one "Heartbeat: watchdog alive" line is logged per day, plus on the first run after each reboot (/tmp is wiped), so `grep Heartbeat /tmp/dns_watchdog.log` always answers "when did it last run?"
 
 ### Changed
+- usb_health_check.sh 0.1.1 uses the shared helpers in `lib_common.sh`. Alerts are now sent synchronously instead of in the background (no visible change for an hourly job).
 
 ### Fixed
 - Cron job now survives router reboots: install.sh (0.2.0) registers the `cru a DNSWatchdog` line in `/jffs/scripts/services-start` (created if missing, made executable), so the watchdog is re-armed at every boot. Previously the job was only added to the live crontab, which is held in RAM — the first reboot silently killed the watchdog.

@@ -39,6 +39,9 @@ The firmware checks for new releases every day, but only shows the result as a b
 **Key Features:**
 - Reads the firmware's update check result from nvram (`webs_state_flag`, `webs_state_info`); no extra network requests
 - One alert per new release, and one reminder if it's still not installed 30 days after the alert
+- Alerts once if the firmware's own update check is turned off, since then no release would ever be detected
+- An alert Telegram doesn't accept is retried on the next run, not marked as sent
+- Versions are compared numerically, so a newer build installed by hand isn't reported as out of date
 - Runs daily via cron (survives reboots); state persists in `/jffs/addons/asus_router_tools/`
 - Daily heartbeat log line, which also notes when the firmware's own update check is failing (`webs_state_error`)
 - Logs to `/tmp/firmware_check.log` and syslog
@@ -201,6 +204,7 @@ asus_router_tools/
 ├── dns_watchdog.sh          # DNS monitoring script
 ├── usb_health_check.sh      # USB storage health monitoring
 ├── firmware_check.sh        # Firmware update alerts
+├── lib_common.sh            # Shared helpers for the check scripts
 ├── telegram_notify.sh       # Telegram notification system  
 ├── telegram.conf.example    # Configuration template
 ├── telegram.conf            # Your credentials (not in git)
