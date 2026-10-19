@@ -96,7 +96,7 @@ telegram.conf
 
 **Current versions:**
 - `dns_watchdog.sh`: 0.4.0
-- `telegram_notify.sh`: 0.2.0  
+- `telegram_notify.sh`: 0.3.1  
 - `install.sh`: 0.4.0
 - `usb_health_check.sh`: 0.1.1
 - `firmware_check.sh`: 0.1.0

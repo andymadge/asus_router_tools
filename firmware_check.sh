@@ -16,6 +16,8 @@
 # check is turned off, since then no release would ever be seen. An alert that
 # can't be delivered is retried on the next run. Healthy runs are silent apart
 # from one daily heartbeat log line (and one on the first run after each boot).
+# A run before NTP has synced the clock (ntp_ready) is skipped, with one alert
+# if that persists for 3 daily runs.
 #
 # Install: run ./install.sh (registers a daily cron job that survives reboots)
 # Manual:  /jffs/scripts/firmware_check.sh --verbose
@@ -23,7 +25,7 @@
 #
 # Testing: the inputs can be overridden with environment variables, e.g.
 #   FW_CHECK_INSTALLED=3006_102_6_0 FW_CHECK_FLAG=1 FW_CHECK_LATEST=3006_102_9_0 \
-#   FW_CHECK_ENABLED=1 FW_CHECK_NOW=$(date +%s) FW_CHECK_STATE_DIR=/tmp/fw_test_state \
+#   FW_CHECK_ENABLED=1 FW_CHECK_NTP_READY=1 FW_CHECK_NOW=$(date +%s) FW_CHECK_STATE_DIR=/tmp/fw_test_state \
 #   FW_CHECK_DRY_RUN=1 /jffs/scripts/firmware_check.sh --verbose
 
 VERSION="0.1.0"
@@ -40,6 +42,8 @@ REMIND_DAYS=30
 STATE_DIR="${FW_CHECK_STATE_DIR:-/jffs/addons/asus_router_tools}"
 STATE_FILE="$STATE_DIR/firmware_check_state"
 DISABLED_ALERTED_FILE="$STATE_DIR/firmware_check_disabled_alerted"
+NTP_SKIPS_FILE="$STATE_DIR/firmware_check_ntp_skips"
+NTP_ALERT_SKIPS=3
 TMP_STATE_DIR="${FW_CHECK_STATE_DIR:-/tmp}"
 HEARTBEAT_FILE="$TMP_STATE_DIR/firmware_check_heartbeat"
 
@@ -103,9 +107,31 @@ FLAG="${FW_CHECK_FLAG:-$(nvram get webs_state_flag)}"
 LATEST="${FW_CHECK_LATEST:-$(nvram get webs_state_info)}"
 CHECK_ERROR="${FW_CHECK_ERROR:-$(nvram get webs_state_error)}"
 NOW="${FW_CHECK_NOW:-$(date +%s)}"
+NTP_READY="${FW_CHECK_NTP_READY:-$(nvram get ntp_ready)}"
 
 mkdir -p "$STATE_DIR" "$TMP_STATE_DIR"
 log_verbose "=== Firmware Check Started ==="
+
+# Until NTP has synced (e.g. just after a power cut) the clock is wrong, and
+# the state timestamps would look invalid or the day counts nonsensical. Runs
+# are counted rather than timed (the clock can't be trusted): if NTP stays
+# unsynced for NTP_ALERT_SKIPS daily runs in a row, alert once, since the
+# check is then blind to new releases.
+if [ "$NTP_READY" != "1" ]; then
+    SKIPS=$(cat "$NTP_SKIPS_FILE" 2>/dev/null)
+    case "$SKIPS" in ''|*[!0-9]*) SKIPS=0 ;; esac
+    SKIPS=$((SKIPS + 1))
+    log_message "Clock not synced yet (ntp_ready=${NTP_READY:-unset}); skipping this run ($SKIPS in a row)"
+    if [ "$SKIPS" -eq "$NTP_ALERT_SKIPS" ] && ! send_alert "⚠️ <b>Router Clock Not Synced</b>
+<i>NTP hasn't synced for $SKIPS daily runs, so the firmware update check is being skipped and new releases won't be alerted.</i>
+🔧 <b>Check:</b> Administration → System → NTP server, and the WAN connection."; then
+        log_message "Alert not delivered; will retry on the next run"
+        SKIPS=$((SKIPS - 1))
+    fi
+    echo "$SKIPS" > "$NTP_SKIPS_FILE"
+    exit 0
+fi
+rm -f "$NTP_SKIPS_FILE"
 log_verbose "Installed $(pretty_version "$INSTALLED"), check enabled=$ENABLED, flag=$FLAG, available=${LATEST:-none}, check error=${CHECK_ERROR:-0}"
 
 # State file: "<last alerted version> <epoch first out of date> <epoch alerted> <reminder sent 0|1>"

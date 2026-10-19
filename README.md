@@ -42,6 +42,7 @@ The firmware checks for new releases every day, but only shows the result as a b
 - Alerts once if the firmware's own update check is turned off, since then no release would ever be detected
 - An alert Telegram doesn't accept is retried on the next run, not marked as sent
 - Versions are compared numerically, so a newer build installed by hand isn't reported as out of date
+- Skips its check until NTP has synced the clock, and alerts once if that lasts 3 daily runs
 - Runs daily via cron (survives reboots); state persists in `/jffs/addons/asus_router_tools/`
 - Daily heartbeat log line, which also notes when the firmware's own update check is failing (`webs_state_error`)
 - Logs to `/tmp/firmware_check.log` and syslog
@@ -223,7 +224,7 @@ asus_router_tools/
 
 ### Common Issues
 
-1. **Notifications not working**: Check `telegram.conf` credentials
+1. **Notifications not working**: Check `telegram.conf` credentials, then `grep -i telegram /tmp/syslog.log`. "Telegram rejected the message" (or "rejected a queued message; dropped it") means Telegram refused it outright (revoked/wrong bot token, wrong chat ID, or HTML it can't parse), so it isn't retried; "Telegram message queued" means it couldn't connect and will retry. During DNS outages the notifier falls back to the fixed API addresses in `TELEGRAM_IPS` (telegram_notify.sh). These drift over time: refresh them from `nslookup api.telegram.org` and check each with `curl --resolve api.telegram.org:443:<ip> https://api.telegram.org/` (any HTTP status such as 302 means it works; a timeout or SSL error means it's stale).
 2. **Cron job not running**: Verify with `cru l` and check system time. If it's missing after a reboot, check `/jffs/scripts/services-start` exists, is executable, and contains the `cru a DNSWatchdog` line (installs made with install.sh < 0.2.0 didn't set this up — re-run `./install.sh`)
 3. **DNS false positives**: Test with different domain in script
 4. **Permission errors**: Ensure scripts are executable (`chmod +x`)
@@ -234,10 +235,12 @@ asus_router_tools/
    Temporary workaround: disable DNSSEC (WAN → Internet Connection).
 6. **"USB Disk Errors" / "USB Disk Check Failed" alert**: the USB disk is reporting media or filesystem errors. Confirm with `dmesg | grep -iE 'medium error|EXT4-fs error'` and `tail /jffs/addons/amtm/disk_check.log`. Media errors ("Unrecovered read error") mean failing hardware, which fsck can't repair: back up anything needed (e.g. traffic history in `nvram get rstats_path`) and replace the stick. Small "nano" sticks run hot and wear quickly; prefer a normal-sized stick and avoid swap if the router doesn't need it.
 7. **"Router Firmware Update Available" alert**: check the [Merlin changelog](https://www.asuswrt-merlin.net/changelog) and skim the release thread on SNBForums, then update at a quiet time (Administration → Firmware Upgrade). After the update, the next daily run clears the alert state. No alerts at all? Check `grep Heartbeat /tmp/firmware_check.log`; a heartbeat mentioning "update check reports error" means the firmware itself can't reach ASUS's update server.
+8. **"Router Firmware Update Check Disabled" alert**: the firmware's own daily update check is off (`nvram get firmware_check_enable` is not 1), so new releases can't be detected. Turn it back on under Administration → Firmware Upgrade; the next daily run notes it's enabled again.
+9. **"Alert not delivered; will retry on the next run" in a log**: Telegram didn't accept an alert from the Firmware Check or USB Health Check (WAN/Telegram down, bad bot token, rate limit). The check retries on every run (logging the details only once), so the alert arrives late rather than being lost; the USB check's daily heartbeat says "alert NOT delivered yet" meanwhile. If it repeats, test the notifier with `/jffs/scripts/telegram_notify.sh` and check `telegram.conf`. (The DNS Watchdog instead relies on the notifier's queue, which is flushed on the next successful send.)
 
 ### Support
 
-- Check router syslog: `logread | grep "DNS Watchdog"`
+- Check router syslog: `grep "DNS Watchdog" /tmp/syslog.log`
 - Verify network connectivity: `ping 8.8.8.8`  
 - Test Telegram API manually: `curl -X POST "https://api.telegram.org/bot<TOKEN>/getMe"`
 

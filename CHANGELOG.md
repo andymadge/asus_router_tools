@@ -17,9 +17,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Daily heartbeat log line in dns_watchdog.sh (0.3.0): healthy checks are silent by design, which made a dead watchdog indistinguishable from a healthy one — now one "Heartbeat: watchdog alive" line is logged per day, plus on the first run after each reboot (/tmp is wiped), so `grep Heartbeat /tmp/dns_watchdog.log` always answers "when did it last run?"
 
 ### Changed
-- usb_health_check.sh 0.1.1 uses the shared helpers in `lib_common.sh`. Alerts are now sent synchronously instead of in the background (no visible change for an hourly job).
+- usb_health_check.sh 0.1.1 uses the shared helpers in `lib_common.sh`. Alerts are now sent synchronously, and a problem is only recorded as alerted once Telegram accepts the message; otherwise it's retried every hourly run (details logged once, and the daily heartbeat says the alert hasn't been delivered).
+- telegram_notify.sh 0.3.1: `TELEGRAM_NO_QUEUE=1` skips the retry queue for callers that retry undelivered alerts themselves (the check scripts, via `lib_common.sh`), so they don't get duplicate messages.
 
 ### Fixed
+- telegram_notify.sh 0.3.1: the direct-IP fallback used during DNS outages never worked. It connected to `https://<ip>/` with a Host header, which fails TLS verification because the certificate doesn't cover the IP; it now pins the IP with `curl --resolve`. The IP list is refreshed (two of the four no longer served the API).
+- telegram_notify.sh 0.3.1 checks Telegram's HTTP status. Previously any HTTP response counted as delivered, so a rejected message (bad token, HTML it can't parse) was silently lost. Now 5xx/429 count as temporary failures (queued, or retried by the caller), and other 4xx as permanent: logged and not queued, and dropped from the queue (with a preview in syslog), so one bad message can't block it. A permanent rejection exits with status 2, and the check scripts then stop retrying that alert.
+- telegram_notify.sh 0.3.1 URL-encodes the message text (`--data-urlencode`). Previously an `&` cut the text short and a `+` became a space, so any alert containing HTML-escaped text (`&lt;`, `&amp;`) was truncated mid-tag and rejected by Telegram.
+- telegram_notify.sh 0.3.1: the retry queue is taken atomically before flushing, so overlapping notifier runs no longer send the same queued messages twice or overwrite messages queued meanwhile. Rewriting the queue also no longer turns escaped newlines inside messages into line breaks, which split a queued multi-line message into broken entries.
+- Firmware Check alerts once if NTP stays unsynced for 3 daily runs, since it skips its check until the clock is right.
+- Firmware Check skips runs before NTP has synced the clock (`ntp_ready`), so a wrong clock after a power cut can't make valid alert state look damaged and trigger a repeat alert.
+- USB Health Check: if an amtm disk-check alert can't be delivered, the retry rescans the same results even when the log grows before the next run.
 - Cron job now survives router reboots: install.sh (0.2.0) registers the `cru a DNSWatchdog` line in `/jffs/scripts/services-start` (created if missing, made executable), so the watchdog is re-armed at every boot. Previously the job was only added to the live crontab, which is held in RAM — the first reboot silently killed the watchdog.
 
 ## [v0.3.0] - 2025-08-06

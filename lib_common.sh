@@ -26,16 +26,27 @@ log_verbose() {
     fi
 }
 
-# Send a Telegram alert if the notifier is installed. Returns non-zero if it
-# couldn't be delivered (the notifier queues it for its next successful send),
-# so callers that alert only once can retry on their next run.
+# Send a Telegram alert. Returns non-zero if it couldn't be delivered yet, so
+# callers record a problem as alerted only on success and retry on their next
+# run; the notifier therefore doesn't queue it as well (TELEGRAM_NO_QUEUE=1).
+# If Telegram rejected it outright (notifier exit 2: bad token, message it
+# can't parse) or the notifier isn't installed, retrying won't help: log it
+# and succeed, so the caller doesn't resend it on every run.
 send_alert() {
     if [ "$DRY_RUN" = "1" ]; then
         echo "--- would send Telegram alert ---"
         echo "$1"
         echo "---"
     elif [ -f "/jffs/scripts/telegram_notify.sh" ]; then
-        /jffs/scripts/telegram_notify.sh "$1" > /dev/null
+        TELEGRAM_NO_QUEUE=1 /jffs/scripts/telegram_notify.sh "$1" > /dev/null
+        case $? in
+            0) return 0 ;;
+            2) log_message "Telegram rejected this alert (check telegram.conf; details in syslog); not retrying"
+               return 0 ;;
+            *) return 1 ;;
+        esac
+    else
+        log_message "Telegram notifier not installed (/jffs/scripts/telegram_notify.sh); alert not sent"
     fi
 }
 
